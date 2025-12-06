@@ -14,9 +14,12 @@ logging.basicConfig(level=logging.INFO)
 def main() -> None:
     bridge = HttpBridge("http://localhost:5055")
 
+    # Test text command - should work immediately
     process_text("Открой блокнот", bridge)
-    process_audio_file(Path("./sample.wav"), bridge)
-    process_audio_stream([b"audio_chunk_1", b"audio_chunk_2"], bridge)
+
+    # TODO: Audio tests disabled until real audio files are available
+    # process_audio_file(Path("./sample.wav"), bridge)
+    # process_audio_stream([b"audio_chunk_1", b"audio_chunk_2"], bridge)
 
 
 if __name__ == "__main__":
