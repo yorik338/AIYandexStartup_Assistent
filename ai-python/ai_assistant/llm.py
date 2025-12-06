@@ -9,13 +9,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Protocol
 from uuid import uuid4
-
+from dotenv import load_dotenv
 from openai import OpenAI
 
 from . import prompts
 
 logger = logging.getLogger(__name__)
-
+load_dotenv()
 
 class LLMBackend(Protocol):
     """A protocol that abstracts a chat completion backend."""
