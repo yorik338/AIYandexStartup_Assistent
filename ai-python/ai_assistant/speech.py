@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Iterable
+import wave
 
 from openai import OpenAI
 
@@ -47,12 +48,24 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
 
     logger.info("Starting streaming transcription")
     collected = b"".join(chunks)
+    if not collected:
+        raise ValueError("No audio data received for streaming transcription")
+
     logger.debug("Collected %d bytes from stream", len(collected))
 
-    client = _build_client()
-    buffer = io.BytesIO(collected)
+    # Wrap the raw bytes into a minimal WAV container so the API receives a
+    # supported audio format even when the incoming stream is raw PCM.
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)  # 16-bit PCM
+        wav_file.setframerate(16_000)
+        wav_file.writeframes(collected)
+
+    buffer.seek(0)
     buffer.name = "stream.wav"
 
+    client = _build_client()
     response = client.audio.transcriptions.create(
         model=_transcription_model(),
         file=buffer,
