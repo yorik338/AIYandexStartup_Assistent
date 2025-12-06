@@ -15,8 +15,14 @@ from .speech import transcribe_audio_file, transcribe_stream
 logger = logging.getLogger(__name__)
 
 
-def process_text(text: str, bridge: HttpBridge) -> Optional[dict]:
-    sender = PromptSender(ChatGPTBackend())
+def process_text(text: str, bridge: HttpBridge, *, sender: Optional[PromptSender] = None) -> Optional[dict]:
+    """Process a text query and forward a validated command to the bridge.
+
+    A custom :class:`PromptSender` can be injected for tests to avoid real LLM
+    calls. When omitted the production ChatGPT backend is used.
+    """
+
+    sender = sender or PromptSender(ChatGPTBackend())
     extractor = IntentExtractor(sender)
     result = extractor.extract(text)
 
@@ -28,11 +34,15 @@ def process_text(text: str, bridge: HttpBridge) -> Optional[dict]:
     return bridge.send_command(result.command)
 
 
-def process_audio_file(audio_path: Path, bridge: HttpBridge) -> Optional[dict]:
+def process_audio_file(
+    audio_path: Path, bridge: HttpBridge, *, sender: Optional[PromptSender] = None
+) -> Optional[dict]:
     transcript = transcribe_audio_file(audio_path)
-    return process_text(transcript, bridge)
+    return process_text(transcript, bridge, sender=sender)
 
 
-def process_audio_stream(chunks: Iterable[bytes], bridge: HttpBridge) -> Optional[dict]:
+def process_audio_stream(
+    chunks: Iterable[bytes], bridge: HttpBridge, *, sender: Optional[PromptSender] = None
+) -> Optional[dict]:
     transcript = transcribe_stream(chunks)
-    return process_text(transcript, bridge)
+    return process_text(transcript, bridge, sender=sender)

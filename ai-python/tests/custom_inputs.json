@@ -1,0 +1,14 @@
+[
+  {
+    "action": "open_app",
+    "params": {"application": "notepad"},
+    "uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    "timestamp": "2024-12-07T10:30:00Z"
+  },
+  {
+    "action": "search_files",
+    "params": {"query": "report"},
+    "uuid": "12345678-90ab-cdef-1234-567890abcdef",
+    "timestamp": "2024-12-07T10:45:00Z"
+  }
+]
