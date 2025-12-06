@@ -40,6 +40,24 @@ app.Use(async (context, next) =>
     }
 });
 
+// GET / - Welcome page
+app.MapGet("/", () =>
+{
+    return Results.Ok(new
+    {
+        service = "JarvisCore",
+        version = "1.0.0",
+        status = "running",
+        message = "JARVIS Assistant C# Core - Ready to serve",
+        endpoints = new
+        {
+            execute = "POST /action/execute",
+            status = "GET /system/status"
+        },
+        availableActions = new[] { "open_app", "search_files", "adjust_setting", "system_status" }
+    });
+});
+
 // POST /action/execute - Execute command
 app.MapPost("/action/execute", async (CommandRequest request, ICommandValidator validator, IActionExecutor executor) =>
 {
