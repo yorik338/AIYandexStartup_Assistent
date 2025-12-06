@@ -14,6 +14,13 @@ logging.basicConfig(level=logging.INFO)
 def main() -> None:
     bridge = HttpBridge("http://localhost:5055")
 
+    if not bridge.is_available():
+        logging.error(
+            "C# bridge is not responding at %s. Start the Windows service and retry.",
+            bridge.endpoint,
+        )
+        return
+
     # Test text command - should work immediately
     process_text("Открой блокнот", bridge)
 
