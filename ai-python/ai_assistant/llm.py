@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Protocol
 from uuid import uuid4
+
+from openai import OpenAI
 
 from . import prompts
 
@@ -74,3 +77,35 @@ class EchoBackend:
                 "note": "Echo backend used; replace with real LLM backend",
             }
         )
+
+
+class ChatGPTBackend:
+    """Backend that sends universal chat requests to OpenAI."""
+
+    def __init__(
+        self,
+        *,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> None:
+        key = api_key or os.getenv("OPENAI_API_KEY")
+        if not key:
+            raise RuntimeError("OPENAI_API_KEY is not configured")
+
+        self._client = OpenAI(api_key=key, base_url=base_url or os.getenv("OPENAI_API_BASE"))
+        self._model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    def complete(self, prompt: str) -> str:  # type: ignore[override]
+        logger.info("Sending prompt to ChatGPT model %s", self._model)
+        response = self._client.chat.completions.create(
+            model=self._model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+        )
+
+        choice = response.choices[0].message.content if response.choices else None
+        if not choice:
+            raise RuntimeError("ChatGPT did not return a completion")
+
+        return choice
