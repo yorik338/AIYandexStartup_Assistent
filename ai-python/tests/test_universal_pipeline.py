@@ -21,9 +21,12 @@ from typing import Dict, Iterable, List
 
 import pytest
 
-# Provide a lightweight stub so the tests do not require the optional OpenAI dependency
+# Provide lightweight stubs so the tests do not require optional dependencies
 if "openai" not in sys.modules:
     sys.modules["openai"] = types.SimpleNamespace(OpenAI=object)
+
+if "dotenv" not in sys.modules:
+    sys.modules["dotenv"] = types.SimpleNamespace(load_dotenv=lambda: None)
 
 from ai_assistant.llm import EchoBackend, PromptSender
 from ai_assistant.pipeline import process_text
