@@ -30,10 +30,20 @@ class IntentExtractor:
     def _ensure_required_fields(data: Dict[str, object]) -> Dict[str, object]:
         """Backfill required fields when the LLM omits them."""
 
+        # Get uuid, but replace placeholders like "<uuid4>" with real UUID
+        uuid_value = data.get("uuid")
+        if not uuid_value or not isinstance(uuid_value, str) or uuid_value.startswith("<"):
+            uuid_value = str(uuid4())
+
+        # Get timestamp, but replace old/placeholder dates with current time
+        timestamp_value = data.get("timestamp")
+        if not timestamp_value or not isinstance(timestamp_value, str) or "2024-01-01" in timestamp_value:
+            timestamp_value = datetime.utcnow().isoformat() + "Z"
+
         enriched: Dict[str, object] = {
             "action": data.get("action"),
             "params": data.get("params", {}),
-            "uuid": data.get("uuid") or str(uuid4()),
-            "timestamp": data.get("timestamp") or (datetime.utcnow().isoformat() + "Z"),
+            "uuid": uuid_value,
+            "timestamp": timestamp_value,
         }
         return enriched

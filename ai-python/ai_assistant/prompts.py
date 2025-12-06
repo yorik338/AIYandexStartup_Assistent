@@ -13,8 +13,8 @@ def build_prompt(user_message: str) -> str:
     """Compose the final prompt sent to the LLM."""
 
     format_reminder = (
-        "Return JSON only, no prose. Example: "
-        "{\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"},"
-        "\"uuid\":\"<uuid4>\",\"timestamp\":\"2024-01-01T10:00:00Z\"}"
+        "Return JSON only, no prose. Include 'action' and 'params' fields. "
+        "Example: {\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}}. "
+        "Do NOT include uuid or timestamp - they will be added automatically."
     )
     return f"{SYSTEM_PROMPT}\n{format_reminder}\n\nUser: {user_message}\nAssistant:"
