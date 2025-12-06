@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main() -> None:
-    bridge = HttpBridge("http://localhost:5055")
+    bridge = HttpBridge("http://127.0.0.1:5055")
 
     if not bridge.is_available():
         logging.error(

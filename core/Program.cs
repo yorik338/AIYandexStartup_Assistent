@@ -100,4 +100,4 @@ app.MapGet("/system/status", () =>
 });
 
 Log.Information("Starting JarvisCore HTTP server on port 5055");
-app.Run("http://localhost:5055");
+app.Run("http://0.0.0.0:5055");
