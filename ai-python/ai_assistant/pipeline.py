@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from .bridge import HttpBridge
-from .llm import EchoBackend, PromptSender
+from .llm import ChatGPTBackend, EchoBackend, PromptSender
 from .nlu import IntentExtractor
 from .schemas import Command
 from .speech import transcribe_audio_file, transcribe_stream
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def process_text(text: str, bridge: HttpBridge) -> Optional[dict]:
-    sender = PromptSender(EchoBackend())
+    sender = PromptSender(ChatGPTBackend())
     extractor = IntentExtractor(sender)
     result = extractor.extract(text)
 
