@@ -47,19 +47,34 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
     """Transcribe streamed audio chunks using ChatGPT/Whisper."""
 
     logger.info("Starting streaming transcription")
+    min_duration_seconds = 0.1
+    sample_rate = 16_000
+    sample_width = 2  # 16-bit PCM
+    bytes_per_second = sample_rate * sample_width
+
     collected = b"".join(chunks)
     if not collected:
         raise ValueError("No audio data received for streaming transcription")
 
     logger.debug("Collected %d bytes from stream", len(collected))
 
+    duration_seconds = len(collected) / bytes_per_second
+    if duration_seconds < min_duration_seconds:
+        pad_bytes = int(min_duration_seconds * bytes_per_second) - len(collected)
+        collected += b"\x00" * pad_bytes
+        logger.debug(
+            "Padded audio stream with %d bytes of silence to reach %.1f seconds",
+            pad_bytes,
+            min_duration_seconds,
+        )
+
     # Wrap the raw bytes into a minimal WAV container so the API receives a
     # supported audio format even when the incoming stream is raw PCM.
     buffer = io.BytesIO()
     with wave.open(buffer, "wb") as wav_file:
         wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)  # 16-bit PCM
-        wav_file.setframerate(16_000)
+        wav_file.setsampwidth(sample_width)
+        wav_file.setframerate(sample_rate)
         wav_file.writeframes(collected)
 
     buffer.seek(0)

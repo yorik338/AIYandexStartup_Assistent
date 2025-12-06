@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 import types
+import wave
 from pathlib import Path
 
 import pytest
@@ -56,3 +57,34 @@ def test_sample_audio_location_documented() -> None:
 
     assert SAMPLE_AUDIO_PATH.name == "sample.waf"
     assert SAMPLE_AUDIO_PATH.parent.name == "ai-python"
+
+
+def test_transcribe_stream_pads_too_short_audio(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure streaming transcription never sends too-short audio to the API."""
+
+    observed_duration = None
+
+    class DummyTranscriptions:
+        def create(self, *, model: str, file):
+            nonlocal observed_duration
+            file.seek(0)
+            with wave.open(file, "rb") as wav_file:
+                observed_duration = wav_file.getnframes() / wav_file.getframerate()
+            return types.SimpleNamespace(text="stream transcription")
+
+    class DummyAudio:
+        def __init__(self) -> None:
+            self.transcriptions = DummyTranscriptions()
+
+    class DummyClient:
+        def __init__(self) -> None:
+            self.audio = DummyAudio()
+
+    monkeypatch.setattr(speech, "_build_client", lambda: DummyClient())
+    monkeypatch.setattr(speech, "_transcription_model", lambda: "test-model")
+
+    result = speech.transcribe_stream([b"short"])
+
+    assert result == "stream transcription"
+    assert observed_duration is not None
+    assert observed_duration >= 0.1
