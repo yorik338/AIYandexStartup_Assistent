@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class HttpBridge:
     """Send commands to the C# layer via HTTP."""
 
-    def __init__(self, endpoint: str, *, timeout: float = 5.0) -> None:
+    def __init__(self, endpoint: str, *, timeout: float = 10.0) -> None:
         self._endpoint = endpoint.rstrip("/")
         self._timeout = timeout
 
@@ -30,14 +30,24 @@ class HttpBridge:
         http_request = request.Request(
             url=f"{self._endpoint}/action/execute",
             data=payload,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "JarvisAssistant/1.0",
+                "Connection": "close",
+            },
         )
         return self._perform_request(http_request, context="bridge call")
 
     def get_status(self) -> Optional[Dict[str, object]]:
         """Fetch system status from the C# service."""
 
-        http_request = request.Request(url=f"{self._endpoint}/system/status")
+        http_request = request.Request(
+            url=f"{self._endpoint}/system/status",
+            headers={
+                "User-Agent": "JarvisAssistant/1.0",
+                "Connection": "close",
+            },
+        )
         return self._perform_request(http_request, context="status check")
 
     def is_available(self) -> bool:
