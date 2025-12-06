@@ -76,8 +76,10 @@ def validate_command(data: Dict[str, Any]) -> ValidationResult:
     if not timestamp or not isinstance(timestamp, str):
         issues.append(ValidationIssue(field="timestamp", message="Timestamp is required"))
     else:
+        # Support ``Z`` suffixes by converting them into a timezone offset for validation
+        normalized_timestamp = timestamp.replace("Z", "+00:00") if timestamp.endswith("Z") else timestamp
         try:
-            datetime.fromisoformat(timestamp)
+            datetime.fromisoformat(normalized_timestamp)
         except ValueError:
             issues.append(ValidationIssue(field="timestamp", message="Timestamp must be ISO 8601"))
 
