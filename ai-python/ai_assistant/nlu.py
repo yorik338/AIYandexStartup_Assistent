@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Dict
+from uuid import uuid4
 
 from .llm import PromptSender, parse_json_safely
 from .schemas import ValidationResult, validate_command
@@ -21,4 +23,17 @@ class IntentExtractor:
         logger.debug("Extracting intent for text: %s", text)
         raw_response = self._sender.send(text)
         data: Dict[str, object] = parse_json_safely(raw_response)
-        return validate_command(data)
+        enriched = self._ensure_required_fields(data)
+        return validate_command(enriched)
+
+    @staticmethod
+    def _ensure_required_fields(data: Dict[str, object]) -> Dict[str, object]:
+        """Backfill required fields when the LLM omits them."""
+
+        enriched: Dict[str, object] = {
+            "action": data.get("action"),
+            "params": data.get("params", {}),
+            "uuid": data.get("uuid") or str(uuid4()),
+            "timestamp": data.get("timestamp") or (datetime.utcnow().isoformat() + "Z"),
+        }
+        return enriched

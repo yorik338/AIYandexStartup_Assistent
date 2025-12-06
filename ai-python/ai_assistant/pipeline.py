@@ -21,7 +21,8 @@ def process_text(text: str, bridge: HttpBridge) -> Optional[dict]:
     result = extractor.extract(text)
 
     if not result.is_valid or result.command is None:
-        logger.warning("Invalid command: %s", result.issues)
+        issue_messages = [f"{issue.field}: {issue.message}" for issue in result.issues]
+        logger.warning("Invalid command for C# bridge: %s", "; ".join(issue_messages))
         return None
 
     return bridge.send_command(result.command)

@@ -1,28 +1,28 @@
-"""Command schema definitions."""
+"""Command schema definitions aligned with the C# bridge contract."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional
-
-Intent = Literal[
-    "open_app",
-    "search_files",
-    "adjust_setting",
-    "system_status",
-    "unknown",
-]
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class Command:
-    """Base command representation."""
+    """Command payload expected by the C# HTTP bridge."""
 
-    intent: Intent
-    payload: Dict[str, Any]
+    action: str
+    params: Dict[str, Any]
+    uuid: str
+    timestamp: str
 
     def to_json(self) -> Dict[str, Any]:
-        return {"intent": self.intent, "payload": self.payload}
+        return {
+            "action": self.action,
+            "params": self.params,
+            "uuid": self.uuid,
+            "timestamp": self.timestamp,
+        }
 
 
 @dataclass
@@ -42,7 +42,8 @@ class ValidationResult:
     command: Optional[Command]
 
 
-REQUIRED_FIELDS = {
+# The actions below mirror the white-listed operations documented for the C# service.
+ALLOWED_ACTIONS = {
     "open_app": ["application"],
     "search_files": ["query"],
     "adjust_setting": ["setting", "value"],
@@ -51,27 +52,34 @@ REQUIRED_FIELDS = {
 
 
 def validate_command(data: Dict[str, Any]) -> ValidationResult:
-    intent = data.get("intent", "unknown")
-    payload = data.get("payload", {})
+    """Validate and normalize incoming JSON from the LLM."""
 
     issues: List[ValidationIssue] = []
 
-    if intent not in REQUIRED_FIELDS:
-        issues.append(ValidationIssue(field="intent", message="Unsupported intent"))
-        return ValidationResult(False, issues, None)
+    action = data.get("action")
+    params = data.get("params", {})
+    uuid = data.get("uuid")
+    timestamp = data.get("timestamp")
 
-    if not isinstance(payload, dict):
-        issues.append(ValidationIssue(field="payload", message="Payload must be an object"))
-        return ValidationResult(False, issues, None)
+    if action not in ALLOWED_ACTIONS:
+        issues.append(ValidationIssue(field="action", message="Unsupported or missing action"))
+    if not isinstance(params, dict):
+        issues.append(ValidationIssue(field="params", message="Params must be an object"))
+        params = {} if not isinstance(params, dict) else params
+    for field in ALLOWED_ACTIONS.get(action, []):
+        if field not in params:
+            issues.append(ValidationIssue(field=field, message="Missing required field"))
 
-    for field in REQUIRED_FIELDS[intent]:
-        if field not in payload:
-            issues.append(
-                ValidationIssue(
-                    field=field,
-                    message="Missing required field",
-                ),
-            )
+    if not uuid or not isinstance(uuid, str):
+        issues.append(ValidationIssue(field="uuid", message="UUID is required"))
 
-    command = Command(intent=intent, payload=payload)
+    if not timestamp or not isinstance(timestamp, str):
+        issues.append(ValidationIssue(field="timestamp", message="Timestamp is required"))
+    else:
+        try:
+            datetime.fromisoformat(timestamp)
+        except ValueError:
+            issues.append(ValidationIssue(field="timestamp", message="Timestamp must be ISO 8601"))
+
+    command = None if issues else Command(action=action, params=params, uuid=uuid, timestamp=timestamp)
     return ValidationResult(is_valid=not issues, issues=issues, command=command)

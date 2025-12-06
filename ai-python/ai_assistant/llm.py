@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, Optional, Protocol
+from uuid import uuid4
 
 from . import prompts
 
@@ -63,4 +65,12 @@ class EchoBackend:
 
     def complete(self, prompt: str) -> str:  # type: ignore[override]
         logger.debug("EchoBackend received prompt: %s", prompt)
-        return json.dumps({"echo": prompt})
+        return json.dumps(
+            {
+                "action": "system_status",
+                "params": {},
+                "uuid": str(uuid4()),
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "note": "Echo backend used; replace with real LLM backend",
+            }
+        )
