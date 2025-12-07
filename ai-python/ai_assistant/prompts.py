@@ -1,5 +1,15 @@
 """Prompt templates and helper functions for the LLM."""
 
+from __future__ import annotations
+
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Iterable, List, Optional
+
+logger = logging.getLogger(__name__)
+
 SYSTEM_PROMPT = (
     "You are an on-device AI assistant for Windows. "
     "You receive spoken or typed requests and must emit a single JSON object. "
@@ -9,8 +19,81 @@ SYSTEM_PROMPT = (
     "search_files, adjust_setting, system_status."
 )
 
+DEFAULT_APPLICATION_HINTS = [
+    "notepad",
+    "calculator",
+    "explorer",
+    "paint",
+    "chrome",
+    "firefox",
+    "edge",
+]
 
-def build_prompt(user_message: str) -> str:
+
+def _candidate_registry_paths(explicit_path: Optional[Path]) -> List[Path]:
+    env_path = os.getenv("JARVIS_APP_REGISTRY")
+    candidates: List[Path] = []
+
+    if explicit_path:
+        candidates.append(explicit_path)
+    if env_path:
+        candidates.append(Path(env_path))
+
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates.append(repo_root / "core" / "Data" / "applications.json")
+
+    return candidates
+
+
+def _extract_application_hints(raw: object) -> List[str]:
+    hints: List[str] = []
+    if not isinstance(raw, list):
+        return hints
+
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+
+        name = entry.get("name")
+        aliases = entry.get("aliases", [])
+
+        for candidate in [name, *(aliases if isinstance(aliases, list) else [])]:
+            if not isinstance(candidate, str):
+                continue
+            normalized = candidate.strip()
+            if normalized and normalized.lower() not in {h.lower() for h in hints}:
+                hints.append(normalized)
+
+    return hints
+
+
+def load_available_applications(
+    *, registry_path: Optional[Path] = None, max_items: int = 30
+) -> List[str]:
+    """Load application names/aliases from the registry file when available.
+
+    The C# core stores discovered applications in ``core/Data/applications.json``.
+    When this file (or a path provided via ``JARVIS_APP_REGISTRY``) is present,
+    the list is surfaced to the LLM so it can prefer valid app names. If nothing
+    is found, a conservative built-in list is returned.
+    """
+
+    for candidate in _candidate_registry_paths(registry_path):
+        try:
+            if not candidate.exists():
+                continue
+
+            raw = json.loads(candidate.read_text(encoding="utf-8"))
+            hints = _extract_application_hints(raw)
+            if hints:
+                return hints[:max_items]
+        except (json.JSONDecodeError, OSError) as exc:  # noqa: BLE001
+            logger.warning("Failed to read application registry at %s: %s", candidate, exc)
+
+    return DEFAULT_APPLICATION_HINTS[:max_items]
+
+
+def build_prompt(user_message: str, *, available_apps: Optional[Iterable[str]] = None) -> str:
     """Compose the final prompt sent to the LLM."""
 
     format_reminder = (
@@ -18,4 +101,15 @@ def build_prompt(user_message: str) -> str:
         "Example: {\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}}. "
         "Do NOT include uuid or timestamp - they will be added automatically."
     )
-    return f"{SYSTEM_PROMPT}\n{format_reminder}\n\nUser: {user_message}\nAssistant:"
+
+    application_hints = list(available_apps) if available_apps is not None else load_available_applications()
+    application_context = ""
+    if application_hints:
+        formatted_apps = ", ".join(application_hints[:20])
+        application_context = (
+            "Known applications you can open: "
+            f"{formatted_apps}. Prefer these names for open_app commands."
+        )
+
+    sections = [SYSTEM_PROMPT, application_context, format_reminder, "", f"User: {user_message}", "Assistant:"]
+    return "\n".join([part for part in sections if part])
