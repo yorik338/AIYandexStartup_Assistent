@@ -86,6 +86,7 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
         file=buffer,
     )
 
+    logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
         raise RuntimeError("No transcription text returned")
 
