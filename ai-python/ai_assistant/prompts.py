@@ -34,13 +34,25 @@ def _candidate_registry_paths(explicit_path: Optional[Path]) -> List[Path]:
     env_path = os.getenv("JARVIS_APP_REGISTRY")
     candidates: List[Path] = []
 
+    def _add_unique(path: Optional[Path]) -> None:
+        if path and path not in candidates:
+            candidates.append(path)
+
     if explicit_path:
-        candidates.append(explicit_path)
+        _add_unique(explicit_path)
     if env_path:
-        candidates.append(Path(env_path))
+        _add_unique(Path(env_path))
 
     repo_root = Path(__file__).resolve().parents[2]
-    candidates.append(repo_root / "core" / "Data" / "applications.json")
+    _add_unique(repo_root / "core" / "Data" / "applications.json")
+
+    # The C# core writes the registry under AppContext.BaseDirectory/Data which
+    # resolves to the build output folder (e.g., core/bin/<config>/<tfm>/Data).
+    # Probe any existing copies there when running alongside the built service.
+    core_bin = repo_root / "core" / "bin"
+    if core_bin.exists():
+        for registry in core_bin.rglob("Data/applications.json"):
+            _add_unique(registry)
 
     return candidates
 
