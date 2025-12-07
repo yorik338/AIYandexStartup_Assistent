@@ -28,6 +28,7 @@ public class ApplicationRegistryTests
                     Id = "system_notepad",
                     Name = "Notepad",
                     Path = "notepad.exe",
+                    ExecutableName = "notepad.exe",
                     Category = "System",
                     IsSystemApp = true,
                     Aliases = new List<string> { "notepad", "блокнот" }
@@ -198,6 +199,7 @@ public class ApplicationRegistryTests
                     Id = "system_notepad",
                     Name = "Notepad",
                     Path = "notepad.exe",
+                    ExecutableName = "notepad.exe",
                     Category = "System",
                     IsSystemApp = true,
                     Aliases = new List<string> { "notepad" }
