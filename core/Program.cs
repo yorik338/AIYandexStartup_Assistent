@@ -5,6 +5,10 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Listen on all interfaces so the Python bridge can reach the service regardless of
+// whether it uses 127.0.0.1 or localhost.
+builder.WebHost.UseUrls("http://0.0.0.0:5055");
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -99,5 +103,5 @@ app.MapGet("/system/status", () =>
     });
 });
 
-Log.Information("Starting JarvisCore HTTP server on port 5055");
-app.Run("http://0.0.0.0:5055");
+Log.Information("Starting JarvisCore HTTP server on port 5055 (all interfaces)");
+app.Run();

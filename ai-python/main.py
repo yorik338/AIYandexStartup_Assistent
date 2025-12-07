@@ -24,13 +24,7 @@ def resolve_bridge_endpoint() -> str:
 
 
 def main() -> None:
-    from ai_assistant.pipeline import (
-        process_audio_file,
-        process_audio_stream,
-        process_text,
-    )
-
-    bridge = HttpBridge(resolve_bridge_endpoint())
+    bridge = HttpBridge("http://localhost:5055")
 
     if not bridge.is_available():
         logging.error(
