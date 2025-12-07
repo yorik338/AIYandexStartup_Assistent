@@ -1,4 +1,4 @@
-using JarvisCore.Validation;
+using JarvisCore.Security;
 using FluentAssertions;
 using Xunit;
 

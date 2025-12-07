@@ -100,7 +100,7 @@ public class ApplicationRegistryTests
         _registry.InitializeAsync().Wait();
 
         // Act
-        var result1 = _registry.FindApplication(null);
+        var result1 = _registry.FindApplication(null!);
         var result2 = _registry.FindApplication("");
         var result3 = _registry.FindApplication("   ");
 
