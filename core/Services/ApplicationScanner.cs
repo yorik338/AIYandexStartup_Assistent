@@ -425,7 +425,7 @@ public class ApplicationScanner
     /// <summary>
     /// Gets the list of system applications (no scanning required)
     /// </summary>
-    public List<ApplicationInfo> GetSystemApplications()
+    public virtual List<ApplicationInfo> GetSystemApplications()
     {
         return new List<ApplicationInfo>(_systemApps.Values);
     }
@@ -436,7 +436,7 @@ public class ApplicationScanner
     /// </summary>
     /// <param name="maxDepth">Maximum directory depth to scan (default: 2, finds games and apps)</param>
     /// <returns>List of discovered applications</returns>
-    public async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 2)
+    public virtual async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 2)
     {
         _logger.LogInformation("Starting OPTIMIZED application scan with max depth: {MaxDepth}", maxDepth);
 
