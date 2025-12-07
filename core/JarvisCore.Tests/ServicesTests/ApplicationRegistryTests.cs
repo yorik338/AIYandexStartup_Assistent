@@ -176,10 +176,18 @@ public class ApplicationRegistryTests
         // Assert
         stats.Should().NotBeNull();
 
-        var totalApps = ((dynamic)stats).TotalApplications;
-        totalApps.Should().BeGreaterThan(0);
+        // Use reflection to access anonymous type properties
+        var statsType = stats.GetType();
+        var totalAppsProperty = statsType.GetProperty("TotalApplications");
+        var systemAppsProperty = statsType.GetProperty("SystemApplications");
 
-        var systemApps = ((dynamic)stats).SystemApplications;
+        totalAppsProperty.Should().NotBeNull();
+        systemAppsProperty.Should().NotBeNull();
+
+        var totalApps = (int)totalAppsProperty!.GetValue(stats)!;
+        var systemApps = (int)systemAppsProperty!.GetValue(stats)!;
+
+        totalApps.Should().BeGreaterThan(0);
         systemApps.Should().BeGreaterThan(0);
     }
 
