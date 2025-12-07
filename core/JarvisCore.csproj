@@ -13,4 +13,12 @@
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
   </ItemGroup>
 
+  <!-- Exclude test files from main project -->
+  <ItemGroup>
+    <Compile Remove="JarvisCore.Tests\**" />
+    <Content Remove="JarvisCore.Tests\**" />
+    <EmbeddedResource Remove="JarvisCore.Tests\**" />
+    <None Remove="JarvisCore.Tests\**" />
+  </ItemGroup>
+
 </Project>
