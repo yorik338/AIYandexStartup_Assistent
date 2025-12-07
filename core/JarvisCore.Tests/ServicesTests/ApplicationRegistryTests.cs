@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using FluentAssertions;
 using Xunit;
+using System.IO;
 
 namespace JarvisCore.Tests.ServicesTests;
 
