@@ -36,6 +36,14 @@ public class ApplicationRegistryTests
             });
 
         _registry = new ApplicationRegistry(_loggerMock.Object, _scannerMock.Object);
+
+        // Delete registry file if it exists to ensure mock is used
+        var dataFolder = Path.Combine(AppContext.BaseDirectory, "Data");
+        var registryPath = Path.Combine(dataFolder, "applications.json");
+        if (File.Exists(registryPath))
+        {
+            File.Delete(registryPath);
+        }
     }
 
     [Fact]
