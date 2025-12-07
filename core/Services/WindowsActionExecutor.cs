@@ -12,11 +12,13 @@ public class WindowsActionExecutor : IActionExecutor
 {
     private readonly ILogger<WindowsActionExecutor> _logger;
     private readonly PathValidator _pathValidator;
+    private readonly ApplicationRegistry _appRegistry;
 
-    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger)
+    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger, ApplicationRegistry appRegistry)
     {
         _logger = logger;
         _pathValidator = new PathValidator();
+        _appRegistry = appRegistry;
     }
 
     public async Task<CommandResponse> ExecuteAsync(CommandRequest request)
@@ -35,6 +37,8 @@ public class WindowsActionExecutor : IActionExecutor
                 "delete_folder" => await DeleteFolder(request),
                 "move_file" => await MoveFile(request),
                 "copy_file" => await CopyFile(request),
+                "scan_applications" => await ScanApplications(request),
+                "list_applications" => await ListApplications(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -72,30 +76,34 @@ public class WindowsActionExecutor : IActionExecutor
         {
             _logger.LogInformation("Opening application: {AppName}", appName);
 
-            // Common Windows applications mapping
-            var appMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            // Find application in registry
+            var appInfo = _appRegistry.FindApplication(appName);
+            if (appInfo == null)
             {
-                { "notepad", "notepad.exe" },
-                { "блокнот", "notepad.exe" },
-                { "calculator", "calc.exe" },
-                { "калькулятор", "calc.exe" },
-                { "explorer", "explorer.exe" },
-                { "проводник", "explorer.exe" },
-                { "paint", "mspaint.exe" },
-                { "chrome", "chrome.exe" },
-                { "firefox", "firefox.exe" },
-                { "edge", "msedge.exe" }
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Application '{appName}' not found in registry. Try running 'scan_applications' command first."
+                };
+            }
+
+            _logger.LogInformation("Found application: {Name} at {Path}", appInfo.Name, appInfo.Path);
+
+            // Build process start info
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = appInfo.Path,
+                UseShellExecute = true
             };
 
-            var executableName = appMappings.ContainsKey(appName)
-                ? appMappings[appName]
-                : appName;
-
-            var process = Process.Start(new ProcessStartInfo
+            // Add launch arguments if specified
+            if (!string.IsNullOrWhiteSpace(appInfo.LaunchArguments))
             {
-                FileName = executableName,
-                UseShellExecute = true
-            });
+                startInfo.Arguments = appInfo.LaunchArguments;
+            }
+
+            var process = Process.Start(startInfo);
 
             if (process == null)
             {
@@ -103,7 +111,7 @@ public class WindowsActionExecutor : IActionExecutor
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Failed to start application: {appName}"
+                    Error = $"Failed to start application: {appInfo.Name}"
                 };
             }
 
@@ -114,9 +122,11 @@ public class WindowsActionExecutor : IActionExecutor
                 Status = "ok",
                 Result = new
                 {
-                    application = appName,
+                    application = appInfo.Name,
+                    path = appInfo.Path,
+                    category = appInfo.Category,
                     processId = process.Id,
-                    message = $"Successfully opened {appName}"
+                    message = $"Successfully opened {appInfo.Name}"
                 },
                 Error = null
             };
@@ -573,6 +583,89 @@ public class WindowsActionExecutor : IActionExecutor
                 Status = "error",
                 Result = null,
                 Error = $"Failed to copy file: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> ScanApplications(CommandRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Starting application scan...");
+
+            await _appRegistry.ScanAndSaveAsync();
+
+            var stats = _appRegistry.GetStatistics();
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    message = "Application scan completed successfully",
+                    statistics = stats
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to scan applications");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to scan applications: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> ListApplications(CommandRequest request)
+    {
+        try
+        {
+            await Task.CompletedTask;
+
+            // Check if category filter is specified
+            string? category = null;
+            if (request.Params.ContainsKey("category"))
+            {
+                category = request.Params["category"]?.ToString();
+            }
+
+            var apps = string.IsNullOrWhiteSpace(category)
+                ? _appRegistry.GetAllApplications()
+                : _appRegistry.GetApplicationsByCategory(category);
+
+            var stats = _appRegistry.GetStatistics();
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    applications = apps.Select(a => new
+                    {
+                        name = a.Name,
+                        category = a.Category,
+                        path = a.Path,
+                        aliases = a.Aliases,
+                        isSystemApp = a.IsSystemApp
+                    }).ToList(),
+                    count = apps.Count,
+                    statistics = stats
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list applications");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to list applications: {ex.Message}"
             };
         }
     }

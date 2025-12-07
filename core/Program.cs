@@ -18,10 +18,17 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Register services
+builder.Services.AddSingleton<ApplicationScanner>();
+builder.Services.AddSingleton<ApplicationRegistry>();
 builder.Services.AddSingleton<IActionExecutor, WindowsActionExecutor>();
 builder.Services.AddSingleton<ICommandValidator, CommandValidator>();
 
 var app = builder.Build();
+
+// Initialize ApplicationRegistry on startup
+var appRegistry = app.Services.GetRequiredService<ApplicationRegistry>();
+await appRegistry.InitializeAsync();
+Log.Information("Application registry initialized");
 
 // Middleware for exception handling
 app.Use(async (context, next) =>
@@ -58,7 +65,12 @@ app.MapGet("/", () =>
             execute = "POST /action/execute",
             status = "GET /system/status"
         },
-        availableActions = new[] { "open_app", "search_files", "adjust_setting", "system_status" }
+        availableActions = new[]
+        {
+            "open_app", "search_files", "adjust_setting", "system_status",
+            "create_folder", "delete_folder", "move_file", "copy_file",
+            "scan_applications", "list_applications"
+        }
     });
 });
 
