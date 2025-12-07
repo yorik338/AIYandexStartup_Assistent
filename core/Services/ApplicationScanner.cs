@@ -11,7 +11,7 @@ public class ApplicationScanner
     private readonly ILogger<ApplicationScanner> _logger;
 
     // Common folders where applications are installed
-    // Optimized: scan only specific subfolders instead of entire LocalAppData/AppData
+    // AUTOMATED: Dynamically finds Steam libraries, all drives, and game folders
     private List<string> GetScanPaths()
     {
         var paths = new List<string>
@@ -19,12 +19,6 @@ public class ApplicationScanner
             // Program Files (most applications)
             @"C:\Program Files",
             @"C:\Program Files (x86)",
-
-            // GAMES - Special paths for game launchers (need deeper scanning)
-            @"C:\Program Files (x86)\Steam\steamapps\common",  // Steam games
-            @"C:\Program Files\Epic Games",                     // Epic Games
-            @"C:\GOG Games",                                    // GOG games
-            @"C:\Program Files\Riot Games",                     // Riot Games (Valorant, LoL)
 
             // LocalAppData - specific known folders only
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs"),
@@ -42,7 +36,113 @@ public class ApplicationScanner
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Notion")
         };
 
+        // AUTOMATED: Find all Steam library folders by reading libraryfolders.vdf
+        var steamLibraries = GetSteamLibraryPaths();
+        foreach (var library in steamLibraries)
+        {
+            paths.Add(Path.Combine(library, "steamapps", "common"));
+            _logger.LogInformation("Auto-detected Steam library: {Path}", library);
+        }
+
+        // AUTOMATED: Scan all available drives for game folders
+        var gamePaths = GetGamePathsFromAllDrives();
+        paths.AddRange(gamePaths);
+
         return paths;
+    }
+
+    /// <summary>
+    /// Automatically finds all Steam library folders by reading libraryfolders.vdf
+    /// </summary>
+    private List<string> GetSteamLibraryPaths()
+    {
+        var libraries = new List<string>();
+
+        // Possible Steam installation locations
+        var steamPaths = new[]
+        {
+            @"C:\Program Files (x86)\Steam",
+            @"C:\Program Files\Steam",
+            @"D:\Steam",
+            @"E:\Steam"
+        };
+
+        foreach (var steamPath in steamPaths)
+        {
+            var configPath = Path.Combine(steamPath, "steamapps", "libraryfolders.vdf");
+            if (File.Exists(configPath))
+            {
+                try
+                {
+                    var content = File.ReadAllText(configPath);
+
+                    // Parse VDF file to extract library paths
+                    // Format: "path"		"D:\\SteamLibrary"
+                    var pathPattern = @"""path""\s+""([^""]+)""";
+                    var matches = System.Text.RegularExpressions.Regex.Matches(content, pathPattern);
+
+                    foreach (System.Text.RegularExpressions.Match match in matches)
+                    {
+                        var libraryPath = match.Groups[1].Value.Replace("\\\\", "\\");
+                        if (Directory.Exists(libraryPath))
+                        {
+                            libraries.Add(libraryPath);
+                            _logger.LogInformation("Found Steam library: {Path}", libraryPath);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to read Steam library config at {Path}", configPath);
+                }
+
+                break; // Found Steam installation, no need to check other locations
+            }
+        }
+
+        return libraries;
+    }
+
+    /// <summary>
+    /// Scans all available drives for common game installation folders
+    /// </summary>
+    private List<string> GetGamePathsFromAllDrives()
+    {
+        var gamePaths = new List<string>();
+
+        // Get all logical drives (C:\, D:\, E:\, etc.)
+        var drives = DriveInfo.GetDrives()
+            .Where(d => d.IsReady && d.DriveType == DriveType.Fixed)
+            .Select(d => d.Name)
+            .ToList();
+
+        _logger.LogInformation("Scanning {Count} drives for game folders: {Drives}",
+            drives.Count, string.Join(", ", drives));
+
+        foreach (var drive in drives)
+        {
+            // Common game folder patterns on each drive
+            var commonGamePaths = new[]
+            {
+                Path.Combine(drive, "Epic Games"),
+                Path.Combine(drive, "Program Files", "Epic Games"),
+                Path.Combine(drive, "GOG Games"),
+                Path.Combine(drive, "Games"),
+                Path.Combine(drive, "Program Files", "Riot Games"),
+                Path.Combine(drive, "Program Files (x86)", "Riot Games")
+            };
+
+            foreach (var path in commonGamePaths)
+            {
+                if (Directory.Exists(path))
+                {
+                    gamePaths.Add(path);
+                    _logger.LogInformation("Auto-detected game folder: {Path}", path);
+                }
+            }
+        }
+
+        return gamePaths;
     }
 
     // Known popular applications with exact paths (high priority)
