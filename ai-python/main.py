@@ -8,7 +8,7 @@ import os
 from ai_assistant.bridge import HttpBridge
 
 logging.basicConfig(level=logging.INFO)
-DEFAULT_BRIDGE_ENDPOINT = "http://127.0.0.1:5055"
+DEFAULT_BRIDGE_ENDPOINT = "http://localhost:5055"
 
 
 def resolve_bridge_endpoint() -> str:
