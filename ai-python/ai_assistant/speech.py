@@ -40,6 +40,8 @@ def transcribe_audio_file(audio_path: Path) -> str:
     if not response.text:
         raise RuntimeError("No transcription text returned")
 
+    logger.info("Voice transcript recognized: %s", response.text)
+
     return response.text
 
 
@@ -88,5 +90,7 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
 
     if not response.text:
         raise RuntimeError("No transcription text returned")
+
+    logger.info("Voice transcript recognized: %s", response.text)
 
     return response.text
