@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 import os
 
-from ai_assistant.bridge import HttpBridge
+from ai_assistant.bridge_requests import HttpBridge
+from ai_assistant.pipeline import process_text
 
 logging.basicConfig(level=logging.INFO)
 DEFAULT_BRIDGE_ENDPOINT = "http://localhost:5055"
