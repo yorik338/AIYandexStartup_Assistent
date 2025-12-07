@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\workspace\\AIYandexStartup_Assistent\\ai-python\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
