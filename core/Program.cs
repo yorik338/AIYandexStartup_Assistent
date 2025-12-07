@@ -25,10 +25,19 @@ builder.Services.AddSingleton<ICommandValidator, CommandValidator>();
 
 var app = builder.Build();
 
-// Initialize ApplicationRegistry on startup
+// Initialize ApplicationRegistry on startup (without automatic scan)
 var appRegistry = app.Services.GetRequiredService<ApplicationRegistry>();
-await appRegistry.InitializeAsync();
-Log.Information("Application registry initialized");
+// Note: Registry will load from file if exists, or start empty
+// Use scan_applications command to populate the registry when ready
+try
+{
+    await appRegistry.InitializeAsync();
+    Log.Information("Application registry initialized");
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Could not initialize application registry, starting with empty registry");
+}
 
 // Middleware for exception handling
 app.Use(async (context, next) =>

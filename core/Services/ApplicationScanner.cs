@@ -11,14 +11,33 @@ public class ApplicationScanner
     private readonly ILogger<ApplicationScanner> _logger;
 
     // Common folders where applications are installed
-    private readonly List<string> _scanPaths = new()
+    // Optimized: scan only specific subfolders instead of entire LocalAppData/AppData
+    private List<string> GetScanPaths()
     {
-        @"C:\Program Files",
-        @"C:\Program Files (x86)",
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs"),
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
-    };
+        var paths = new List<string>
+        {
+            // Program Files (most applications)
+            @"C:\Program Files",
+            @"C:\Program Files (x86)",
+
+            // LocalAppData - specific known folders only
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "slack"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Obsidian"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JetBrains"),
+
+            // AppData - specific known folders only
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Telegram Desktop"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Spotify"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Zoom"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Notion")
+        };
+
+        return paths;
+    }
 
     // System applications that don't require scanning
     private readonly Dictionary<string, ApplicationInfo> _systemApps = new()
@@ -156,39 +175,56 @@ public class ApplicationScanner
     }
 
     /// <summary>
-    /// Scans the system for installed applications
+    /// Gets the list of system applications (no scanning required)
     /// </summary>
-    /// <param name="maxDepth">Maximum directory depth to scan (default: 2)</param>
-    /// <returns>List of discovered applications</returns>
-    public async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 2)
+    public List<ApplicationInfo> GetSystemApplications()
     {
-        _logger.LogInformation("Starting application scan with max depth: {MaxDepth}", maxDepth);
+        return new List<ApplicationInfo>(_systemApps.Values);
+    }
+
+    /// <summary>
+    /// Scans the system for installed applications
+    /// OPTIMIZED: Parallel scanning with reduced depth for faster results
+    /// </summary>
+    /// <param name="maxDepth">Maximum directory depth to scan (default: 1, optimized for speed)</param>
+    /// <returns>List of discovered applications</returns>
+    public async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 1)
+    {
+        _logger.LogInformation("Starting OPTIMIZED application scan with max depth: {MaxDepth}", maxDepth);
+
+        var scanPaths = GetScanPaths();
+        _logger.LogInformation("Scanning {Count} paths in parallel...", scanPaths.Count);
 
         var applications = new List<ApplicationInfo>();
 
         // Add system applications first
         applications.AddRange(_systemApps.Values);
 
-        // Scan each path
-        foreach (var basePath in _scanPaths)
+        // OPTIMIZATION: Scan all paths in parallel instead of sequentially
+        var scanTasks = scanPaths
+            .Where(Directory.Exists)
+            .Select(async basePath =>
+            {
+                _logger.LogInformation("Scanning path: {Path}", basePath);
+                try
+                {
+                    return await Task.Run(() => ScanDirectory(basePath, 0, maxDepth));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error scanning path: {Path}", basePath);
+                    return new List<ApplicationInfo>();
+                }
+            })
+            .ToList();
+
+        // Wait for all scans to complete in parallel
+        var results = await Task.WhenAll(scanTasks);
+
+        // Combine all results
+        foreach (var foundApps in results)
         {
-            if (!Directory.Exists(basePath))
-            {
-                _logger.LogWarning("Scan path does not exist: {Path}", basePath);
-                continue;
-            }
-
-            _logger.LogInformation("Scanning path: {Path}", basePath);
-
-            try
-            {
-                var foundApps = await Task.Run(() => ScanDirectory(basePath, 0, maxDepth));
-                applications.AddRange(foundApps);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error scanning path: {Path}", basePath);
-            }
+            applications.AddRange(foundApps);
         }
 
         _logger.LogInformation("Application scan completed. Found {Count} applications", applications.Count);

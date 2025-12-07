@@ -29,7 +29,8 @@ public class ApplicationRegistry
     }
 
     /// <summary>
-    /// Initializes the registry by loading from file or performing initial scan
+    /// Initializes the registry by loading from file (does NOT auto-scan)
+    /// Use ScanAndSaveAsync() to manually scan the system
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -43,8 +44,9 @@ public class ApplicationRegistry
             }
             else
             {
-                _logger.LogInformation("No registry found. Performing initial scan...");
-                await ScanAndSaveAsync();
+                _logger.LogWarning("No registry found at {Path}. Use 'scan_applications' command to populate.", _registryPath);
+                // Start with only system apps
+                _applications = new List<ApplicationInfo>(_scanner.GetSystemApplications());
             }
 
             _logger.LogInformation("Application registry initialized with {Count} applications", _applications.Count);
