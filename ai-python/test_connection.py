@@ -33,7 +33,7 @@ def print_warning(message: str) -> None:
     print(f"{Colors.YELLOW}⚠ {message}{Colors.RESET}")
 
 
-def test_root_endpoint(base_url: str) -> bool:
+def check_root_endpoint(base_url: str) -> bool:
     """Test GET / endpoint."""
     print_info("Testing GET / ...")
     try:
@@ -53,7 +53,7 @@ def test_root_endpoint(base_url: str) -> bool:
         return False
 
 
-def test_system_status(base_url: str) -> bool:
+def check_system_status(base_url: str) -> bool:
     """Test GET /system/status endpoint."""
     print_info("Testing GET /system/status ...")
     try:
@@ -77,7 +77,7 @@ def test_system_status(base_url: str) -> bool:
         return False
 
 
-def test_action_execute(base_url: str) -> bool:
+def check_action_execute(base_url: str) -> bool:
     """Test POST /action/execute endpoint."""
     print_info("Testing POST /action/execute (system_status action) ...")
     try:
@@ -125,9 +125,9 @@ def main() -> None:
         print(f"\n{Colors.YELLOW}Testing endpoint: {base_url}{Colors.RESET}\n")
 
         results = {
-            "Root endpoint": test_root_endpoint(base_url),
-            "System status": test_system_status(base_url),
-            "Action execute": test_action_execute(base_url),
+            "Root endpoint": check_root_endpoint(base_url),
+            "System status": check_system_status(base_url),
+            "Action execute": check_action_execute(base_url),
         }
 
         print(f"\n{Colors.BLUE}{'='*60}{Colors.RESET}")
