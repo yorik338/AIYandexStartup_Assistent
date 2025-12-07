@@ -39,6 +39,123 @@ public class ApplicationScanner
         return paths;
     }
 
+    // Known popular applications with exact paths (high priority)
+    // These override scanner results to ensure correct .exe files
+    private Dictionary<string, ApplicationInfo> GetKnownApplications()
+    {
+        var known = new Dictionary<string, ApplicationInfo>(StringComparer.OrdinalIgnoreCase);
+
+        // Steam - exact path to main executable
+        var steamPath = @"C:\Program Files (x86)\Steam\steam.exe";
+        if (File.Exists(steamPath))
+        {
+            known["steam"] = new ApplicationInfo
+            {
+                Id = "known_steam",
+                Name = "Steam",
+                ExecutableName = "steam.exe",
+                Path = steamPath,
+                Category = "Entertainment",
+                IsSystemApp = false,
+                Aliases = new List<string> { "steam", "стим" }
+            };
+        }
+
+        // Discord - exact path
+        var discordPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            @"Discord\app-1.0.9162\Discord.exe"
+        );
+        // Discord updates frequently, so find latest version
+        var discordBase = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Discord"
+        );
+        if (Directory.Exists(discordBase))
+        {
+            var appDirs = Directory.GetDirectories(discordBase, "app-*")
+                .OrderByDescending(d => d)
+                .ToList();
+
+            if (appDirs.Any())
+            {
+                var latestDiscord = Path.Combine(appDirs[0], "Discord.exe");
+                if (File.Exists(latestDiscord))
+                {
+                    known["discord"] = new ApplicationInfo
+                    {
+                        Id = "known_discord",
+                        Name = "Discord",
+                        ExecutableName = "Discord.exe",
+                        Path = latestDiscord,
+                        Category = "Communication",
+                        IsSystemApp = false,
+                        Aliases = new List<string> { "discord", "дискорд" }
+                    };
+                }
+            }
+        }
+
+        // Telegram - exact path
+        var telegramPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            @"Telegram Desktop\Telegram.exe"
+        );
+        if (File.Exists(telegramPath))
+        {
+            known["telegram"] = new ApplicationInfo
+            {
+                Id = "known_telegram",
+                Name = "Telegram",
+                ExecutableName = "Telegram.exe",
+                Path = telegramPath,
+                Category = "Communication",
+                IsSystemApp = false,
+                Aliases = new List<string> { "telegram", "телеграм" }
+            };
+        }
+
+        // Spotify - exact path
+        var spotifyPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            @"Spotify\Spotify.exe"
+        );
+        if (File.Exists(spotifyPath))
+        {
+            known["spotify"] = new ApplicationInfo
+            {
+                Id = "known_spotify",
+                Name = "Spotify",
+                ExecutableName = "Spotify.exe",
+                Path = spotifyPath,
+                Category = "Entertainment",
+                IsSystemApp = false,
+                Aliases = new List<string> { "spotify", "спотифай" }
+            };
+        }
+
+        // VS Code - exact path
+        var vscodePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            @"Programs\Microsoft VS Code\Code.exe"
+        );
+        if (File.Exists(vscodePath))
+        {
+            known["vscode"] = new ApplicationInfo
+            {
+                Id = "known_vscode",
+                Name = "Visual Studio Code",
+                ExecutableName = "Code.exe",
+                Path = vscodePath,
+                Category = "Development",
+                IsSystemApp = false,
+                Aliases = new List<string> { "vscode", "code", "visual studio code" }
+            };
+        }
+
+        return known;
+    }
+
     // System applications that don't require scanning
     private readonly Dictionary<string, ApplicationInfo> _systemApps = new()
     {
@@ -196,11 +313,22 @@ public class ApplicationScanner
         _logger.LogInformation("Scanning {Count} paths in parallel...", scanPaths.Count);
 
         var applications = new List<ApplicationInfo>();
+        var knownAppPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Add system applications first
+        // PRIORITY 1: Add system applications first
         applications.AddRange(_systemApps.Values);
+        _logger.LogInformation("Added {Count} system applications", _systemApps.Count);
 
-        // OPTIMIZATION: Scan all paths in parallel instead of sequentially
+        // PRIORITY 2: Add known applications with exact paths (Steam, Discord, etc.)
+        var knownApps = GetKnownApplications();
+        applications.AddRange(knownApps.Values);
+        foreach (var app in knownApps.Values)
+        {
+            knownAppPaths.Add(app.Path);
+        }
+        _logger.LogInformation("Added {Count} known applications with exact paths", knownApps.Count);
+
+        // PRIORITY 3: Scan all paths in parallel for other applications
         var scanTasks = scanPaths
             .Where(Directory.Exists)
             .Select(async basePath =>
@@ -221,13 +349,25 @@ public class ApplicationScanner
         // Wait for all scans to complete in parallel
         var results = await Task.WhenAll(scanTasks);
 
-        // Combine all results
+        // Combine results, skipping duplicates from known apps
+        int skippedDuplicates = 0;
         foreach (var foundApps in results)
         {
-            applications.AddRange(foundApps);
+            foreach (var app in foundApps)
+            {
+                // Skip if this path is already in known apps (avoid duplicates)
+                if (knownAppPaths.Contains(app.Path))
+                {
+                    skippedDuplicates++;
+                    continue;
+                }
+
+                applications.Add(app);
+            }
         }
 
-        _logger.LogInformation("Application scan completed. Found {Count} applications", applications.Count);
+        _logger.LogInformation("Application scan completed. Found {Count} applications ({Skipped} duplicates skipped)",
+            applications.Count, skippedDuplicates);
 
         return applications;
     }
@@ -399,10 +539,23 @@ public class ApplicationScanner
             return false;
         }
 
-        // Skip crash handlers and helpers
+        // Skip crash handlers, helpers, services, overlays
         if (fileName.Contains("crash") ||
             fileName.Contains("helper") ||
-            fileName.Contains("service"))
+            fileName.Contains("service") ||
+            fileName.Contains("overlay") ||
+            fileName.Contains("launcher") ||
+            fileName.Contains("reporter") ||
+            fileName.Contains("error"))
+        {
+            return false;
+        }
+
+        // Skip common background processes
+        if (fileName.Contains("background") ||
+            fileName.Contains("daemon") ||
+            fileName.Contains("watchdog") ||
+            fileName.Contains("monitor"))
         {
             return false;
         }
