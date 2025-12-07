@@ -44,20 +44,39 @@ class HttpBridge:
         return self._endpoint
 
     def send_command(self, command: Command) -> Optional[Dict[str, object]]:
-        payload = command.to_json()
-        logger.info("Sending command to C# bridge: %s", json.dumps(payload))
-        try:
-            response = self._session.post(
-                f"{self._endpoint}/action/execute",
-                json=payload,
-                timeout=self._timeout,
-            )
-            response.raise_for_status()
-            logger.debug("Bridge response: %s", response.text)
-            return response.json()
-        except requests.exceptions.RequestException as exc:
-            logger.error("C# bridge call failed: %s. Endpoint: %s", exc, self._endpoint)
-            return None
+        payload_template = command.to_json()
+        application = payload_template.get("params", {}).get("application")
+
+        candidates = [application]
+        if isinstance(application, str) and application.startswith("known_"):
+            candidates.append(application.removeprefix("known_"))
+
+        for candidate in candidates:
+            payload = {
+                **payload_template,
+                "params": {**payload_template.get("params", {}), "application": candidate},
+            }
+            logger.info("Sending command to C# bridge: %s", json.dumps(payload))
+            try:
+                response = self._session.post(
+                    f"{self._endpoint}/action/execute",
+                    json=payload,
+                    timeout=self._timeout,
+                )
+                response.raise_for_status()
+                logger.debug("Bridge response: %s", response.text)
+                return response.json()
+            except requests.exceptions.RequestException as exc:
+                logger.warning(
+                    "Bridge call with application '%s' failed: %s. Endpoint: %s",
+                    candidate,
+                    exc,
+                    self._endpoint,
+                )
+                continue
+
+        logger.error("All bridge attempts failed for command: %s", json.dumps(payload_template))
+        return None
 
     def get_status(self) -> Optional[Dict[str, object]]:
         """Fetch system status from the C# service."""
