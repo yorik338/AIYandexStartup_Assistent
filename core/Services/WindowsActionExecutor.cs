@@ -31,6 +31,10 @@ public class WindowsActionExecutor : IActionExecutor
                 "search_files" => await SearchFiles(request),
                 "adjust_setting" => await AdjustSetting(request),
                 "system_status" => await GetSystemStatus(request),
+                "create_folder" => await CreateFolder(request),
+                "delete_folder" => await DeleteFolder(request),
+                "move_file" => await MoveFile(request),
+                "copy_file" => await CopyFile(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -243,5 +247,339 @@ public class WindowsActionExecutor : IActionExecutor
             },
             Error = null
         };
+    }
+
+    private async Task<CommandResponse> CreateFolder(CommandRequest request)
+    {
+        var path = request.Params["path"].ToString();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Path is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Creating folder: {Path}", path);
+
+            // Expand environment variables and make absolute path
+            var fullPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
+
+            // Validate path for security
+            var validationResult = _pathValidator.ValidatePath(fullPath);
+            if (!validationResult.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Path validation failed: {validationResult.ErrorMessage}"
+                };
+            }
+
+            // Check if folder already exists
+            if (Directory.Exists(fullPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "ok",
+                    Result = new
+                    {
+                        path = fullPath,
+                        message = "Folder already exists",
+                        alreadyExisted = true
+                    },
+                    Error = null
+                };
+            }
+
+            // Create the folder
+            await Task.Run(() => Directory.CreateDirectory(fullPath));
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    path = fullPath,
+                    message = "Folder created successfully",
+                    alreadyExisted = false
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create folder: {Path}", path);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to create folder: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> DeleteFolder(CommandRequest request)
+    {
+        var path = request.Params["path"].ToString();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Path is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Deleting folder: {Path}", path);
+
+            // Expand environment variables and make absolute path
+            var fullPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
+
+            // Validate path for security
+            var validationResult = _pathValidator.ValidatePath(fullPath);
+            if (!validationResult.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Path validation failed: {validationResult.ErrorMessage}"
+                };
+            }
+
+            // Check if folder exists
+            if (!Directory.Exists(fullPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Folder does not exist"
+                };
+            }
+
+            // Delete the folder recursively
+            await Task.Run(() => Directory.Delete(fullPath, recursive: true));
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    path = fullPath,
+                    message = "Folder deleted successfully"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete folder: {Path}", path);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to delete folder: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> MoveFile(CommandRequest request)
+    {
+        var source = request.Params["source"].ToString();
+        var destination = request.Params["destination"].ToString();
+
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Source or destination path is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Moving file from {Source} to {Destination}", source, destination);
+
+            // Expand environment variables and make absolute paths
+            var sourcePath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(source));
+            var destPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(destination));
+
+            // Validate both paths for security
+            var sourceValidation = _pathValidator.ValidatePath(sourcePath);
+            if (!sourceValidation.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Source path validation failed: {sourceValidation.ErrorMessage}"
+                };
+            }
+
+            var destValidation = _pathValidator.ValidatePath(destPath);
+            if (!destValidation.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Destination path validation failed: {destValidation.ErrorMessage}"
+                };
+            }
+
+            // Check if source file exists
+            if (!File.Exists(sourcePath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Source file does not exist"
+                };
+            }
+
+            // Check if destination already exists
+            if (File.Exists(destPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Destination file already exists"
+                };
+            }
+
+            // Move the file
+            await Task.Run(() => File.Move(sourcePath, destPath));
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    source = sourcePath,
+                    destination = destPath,
+                    message = "File moved successfully"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to move file from {Source} to {Destination}", source, destination);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to move file: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> CopyFile(CommandRequest request)
+    {
+        var source = request.Params["source"].ToString();
+        var destination = request.Params["destination"].ToString();
+
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Source or destination path is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Copying file from {Source} to {Destination}", source, destination);
+
+            // Expand environment variables and make absolute paths
+            var sourcePath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(source));
+            var destPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(destination));
+
+            // Validate both paths for security
+            var sourceValidation = _pathValidator.ValidatePath(sourcePath);
+            if (!sourceValidation.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Source path validation failed: {sourceValidation.ErrorMessage}"
+                };
+            }
+
+            var destValidation = _pathValidator.ValidatePath(destPath);
+            if (!destValidation.IsValid)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Destination path validation failed: {destValidation.ErrorMessage}"
+                };
+            }
+
+            // Check if source file exists
+            if (!File.Exists(sourcePath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Source file does not exist"
+                };
+            }
+
+            // Check if destination already exists
+            if (File.Exists(destPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Destination file already exists"
+                };
+            }
+
+            // Copy the file
+            await Task.Run(() => File.Copy(sourcePath, destPath));
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    source = sourcePath,
+                    destination = destPath,
+                    message = "File copied successfully"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to copy file from {Source} to {Destination}", source, destination);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to copy file: {ex.Message}"
+            };
+        }
     }
 }

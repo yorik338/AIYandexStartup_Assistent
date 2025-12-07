@@ -14,7 +14,11 @@ public class CommandValidator : ICommandValidator
         { "open_app", new List<string> { "application" } },
         { "search_files", new List<string> { "query" } },
         { "adjust_setting", new List<string> { "setting", "value" } },
-        { "system_status", new List<string>() }
+        { "system_status", new List<string>() },
+        { "create_folder", new List<string> { "path" } },
+        { "delete_folder", new List<string> { "path" } },
+        { "move_file", new List<string> { "source", "destination" } },
+        { "copy_file", new List<string> { "source", "destination" } }
     };
 
     public ValidationResult Validate(CommandRequest request)
