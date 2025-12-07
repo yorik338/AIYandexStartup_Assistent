@@ -21,22 +21,22 @@ function Send-JarvisCommand {
         timestamp = (Get-Date).ToUniversalTime().ToString("o")
     } | ConvertTo-Json -Depth 10
 
-    Write-Host "→ Testing: $Action" -ForegroundColor Cyan
+    Write-Host "> Testing: $Action" -ForegroundColor Cyan
     Write-Host "  Params: $($Params | ConvertTo-Json -Compress)" -ForegroundColor Gray
 
     try {
         $response = Invoke-RestMethod -Uri "$baseUrl/action/execute" -Method Post -Body $body -ContentType "application/json"
 
         if ($response.status -eq "ok") {
-            Write-Host "✓ SUCCESS" -ForegroundColor Green
+            Write-Host "[OK] SUCCESS" -ForegroundColor Green
             Write-Host "  Result: $($response.result | ConvertTo-Json -Compress)" -ForegroundColor Gray
         } else {
-            Write-Host "✗ ERROR: $($response.error)" -ForegroundColor Red
+            Write-Host "[FAIL] ERROR: $($response.error)" -ForegroundColor Red
         }
 
         return $response
     } catch {
-        Write-Host "✗ FAILED: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[FAIL] FAILED: $($_.Exception.Message)" -ForegroundColor Red
         return $null
     }
 
@@ -116,27 +116,31 @@ $passed = 0
 $failed = 0
 
 foreach ($test in $tests) {
-    $status = if ($test.Result -and $test.Result.status -eq "ok") {
+    $status = ""
+    if ($test.Result -and $test.Result.status -eq "ok") {
         $passed++
-        "✓ PASS"
+        $status = "[PASS]"
+        $color = "Green"
     } elseif ($test.Name -like "*should fail*" -and $test.Result.status -eq "error") {
         $passed++
-        "✓ PASS (expected error)"
+        $status = "[PASS] (expected error)"
+        $color = "Green"
     } else {
         $failed++
-        "✗ FAIL"
+        $status = "[FAIL]"
+        $color = "Red"
     }
 
-    $color = if ($status -like "*PASS*") { "Green" } else { "Red" }
-    Write-Host "  $($test.Name.PadRight(30)) [$status]" -ForegroundColor $color
+    Write-Host "  $($test.Name.PadRight(30)) $status" -ForegroundColor $color
 }
 
 Write-Host "`n========================================" -ForegroundColor Blue
-Write-Host "  Total: $($tests.Count) | Passed: $passed | Failed: $failed" -ForegroundColor $(if ($failed -eq 0) { "Green" } else { "Yellow" })
+$summaryColor = if ($failed -eq 0) { "Green" } else { "Yellow" }
+Write-Host "  Total: $($tests.Count) | Passed: $passed | Failed: $failed" -ForegroundColor $summaryColor
 Write-Host "========================================`n" -ForegroundColor Blue
 
 if ($failed -eq 0) {
-    Write-Host "🎉 ВСЕ ЧИКИ-ПУКИ! Все тесты прошли!" -ForegroundColor Green
+    Write-Host "SUCCESS! All tests passed!" -ForegroundColor Green
 } else {
-    Write-Host "⚠ Некоторые тесты провалились. Проверь логи!" -ForegroundColor Yellow
+    Write-Host "WARNING: Some tests failed. Check the logs!" -ForegroundColor Yellow
 }
