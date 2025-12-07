@@ -14,6 +14,8 @@ SYSTEM_PROMPT = (
     "You are an on-device AI assistant for Windows. "
     "You receive spoken or typed requests and must emit a single JSON object. "
     "Follow the C# bridge contract exactly: {action, params, uuid, timestamp}. "
+    "When a user names an application, keep that name exactly—do not swap it for "
+    "a different known app or a store launcher. "
     "because they map to verified paths; choose these aliases over raw filenames. "
     "Use ISO 8601 timestamps and include only allowed actions: open_app, "
     "search_files, adjust_setting, system_status."
@@ -120,7 +122,9 @@ def build_prompt(user_message: str, *, available_apps: Optional[Iterable[str]] =
         formatted_apps = ", ".join(application_hints[:20])
         application_context = (
             "Known applications you can open: "
-            f"{formatted_apps}. Prefer these names for open_app commands."
+            f"{formatted_apps}. Prefer these names for open_app commands only when "
+            "they match the user's request; never replace the requested app with "
+            "a different one just because it is known."
         )
 
     sections = [SYSTEM_PROMPT, application_context, format_reminder, "", f"User: {user_message}", "Assistant:"]
