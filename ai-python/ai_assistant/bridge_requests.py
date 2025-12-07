@@ -32,6 +32,12 @@ class HttpBridge:
                 "Connection": "close",
             }
         )
+        # Disable proxy for localhost connections
+        self._session.proxies = {
+            'http': None,
+            'https': None,
+        }
+        self._session.trust_env = False
 
     @property
     def endpoint(self) -> str:
