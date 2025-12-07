@@ -53,31 +53,60 @@ function startPythonAssistant() {
   }
 
   const pythonScriptPath = path.join(__dirname, '..', 'ai-python', 'main.py');
+  console.log('Starting Python process...');
+  console.log('Script path:', pythonScriptPath);
+  console.log('Config:', { endpoint: config.coreEndpoint, hasKey: !!config.openaiKey });
 
-  pythonProcess = spawn('python', [pythonScriptPath], {
-    env: {
-      ...process.env,
-      JARVIS_CORE_ENDPOINT: config.coreEndpoint,
-      OPENAI_API_KEY: config.openaiKey,
-    },
-  });
+  // Try python3 first, fallback to python
+  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
 
-  pythonProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    console.log('Python:', output);
-    handlePythonOutput(output);
-  });
+  try {
+    pythonProcess = spawn(pythonCmd, [pythonScriptPath], {
+      env: {
+        ...process.env,
+        JARVIS_CORE_ENDPOINT: config.coreEndpoint,
+        OPENAI_API_KEY: config.openaiKey,
+      },
+    });
 
-  pythonProcess.stderr.on('data', (data) => {
-    console.error('Python Error:', data.toString());
-  });
+    console.log('Python process spawned, PID:', pythonProcess.pid);
 
-  pythonProcess.on('close', (code) => {
-    console.log(`Python process exited with code ${code}`);
+    pythonProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log('Python stdout:', output);
+      handlePythonOutput(output);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      const error = data.toString();
+      console.error('Python stderr:', error);
+      updateResponse(`Ошибка Python: ${error}`);
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Failed to start Python process:', error);
+      updateResponse(`Не удалось запустить Python: ${error.message}`);
+      setStatus('Ошибка', false);
+      pythonProcess = null;
+      isListening = false;
+    });
+
+    pythonProcess.on('close', (code) => {
+      console.log(`Python process exited with code ${code}`);
+      if (code !== 0) {
+        updateResponse(`Python завершился с ошибкой (код ${code})`);
+      }
+      pythonProcess = null;
+      setStatus('Готов', false);
+      isListening = false;
+    });
+  } catch (error) {
+    console.error('Exception starting Python:', error);
+    updateResponse(`Ошибка запуска: ${error.message}`);
+    setStatus('Ошибка', false);
     pythonProcess = null;
-    setStatus('Готов', false);
     isListening = false;
-  });
+  }
 }
 
 // Handle Python output
