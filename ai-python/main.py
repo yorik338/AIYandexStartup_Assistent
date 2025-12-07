@@ -3,16 +3,34 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+import os
 
 from ai_assistant.bridge import HttpBridge
-from ai_assistant.pipeline import process_audio_file, process_audio_stream, process_text
 
 logging.basicConfig(level=logging.INFO)
+DEFAULT_BRIDGE_ENDPOINT = "http://127.0.0.1:5055"
+
+
+def resolve_bridge_endpoint() -> str:
+    """Return the C# bridge endpoint, honoring the ``JARVIS_CORE_ENDPOINT`` env var."""
+
+    env_override = os.getenv("JARVIS_CORE_ENDPOINT")
+    if env_override:
+        logging.info("Using bridge endpoint from JARVIS_CORE_ENDPOINT: %s", env_override)
+        return env_override
+
+    logging.info("Using default bridge endpoint: %s", DEFAULT_BRIDGE_ENDPOINT)
+    return DEFAULT_BRIDGE_ENDPOINT
 
 
 def main() -> None:
-    bridge = HttpBridge("http://127.0.0.1:5055")
+    from ai_assistant.pipeline import (
+        process_audio_file,
+        process_audio_stream,
+        process_text,
+    )
+
+    bridge = HttpBridge(resolve_bridge_endpoint())
 
     if not bridge.is_available():
         logging.error(
