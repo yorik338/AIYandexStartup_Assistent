@@ -13,7 +13,9 @@ from ai_assistant.pipeline import process_audio_stream
 logging.basicConfig(level=logging.INFO)
 DEFAULT_BRIDGE_ENDPOINT = "http://localhost:5055"
 DEFAULT_SAMPLE_RATE = 16_000
-DEFAULT_DURATION_SECONDS = 5.0
+DEFAULT_MAX_DURATION_SECONDS = 30.0
+DEFAULT_SILENCE_DURATION_SECONDS = 1.0
+DEFAULT_SILENCE_THRESHOLD = 500
 
 
 def resolve_bridge_endpoint() -> str:
@@ -41,31 +43,74 @@ def _load_dependency(name: str):
 
 
 def record_microphone_audio(
-    *, duration_seconds: float = DEFAULT_DURATION_SECONDS, sample_rate: int = DEFAULT_SAMPLE_RATE
+    *,
+    sample_rate: int = DEFAULT_SAMPLE_RATE,
+    max_duration_seconds: float = DEFAULT_MAX_DURATION_SECONDS,
+    silence_duration_seconds: float = DEFAULT_SILENCE_DURATION_SECONDS,
+    silence_threshold: float = DEFAULT_SILENCE_THRESHOLD,
 ) -> bytes:
-    """Capture raw PCM audio from the default microphone."""
+    """Capture raw PCM audio from the default microphone until silence is detected."""
 
-    if duration_seconds <= 0:
-        raise ValueError("duration_seconds must be positive")
+    if max_duration_seconds <= 0:
+        raise ValueError("max_duration_seconds must be positive")
+    if silence_duration_seconds <= 0:
+        raise ValueError("silence_duration_seconds must be positive")
 
     sounddevice = _load_dependency("sounddevice")
     numpy = _load_dependency("numpy")
 
+    block_duration = 0.2  # seconds
+    block_size = int(sample_rate * block_duration)
+    silence_limit = max(1, int(round(silence_duration_seconds / block_duration)))
+
     logging.info(
-        "Recording audio from microphone for %.1f seconds at %d Hz",
-        duration_seconds,
+        "Recording audio at %d Hz until %.1f seconds of silence or %.1f seconds max",
         sample_rate,
+        silence_duration_seconds,
+        max_duration_seconds,
     )
-    frames = int(duration_seconds * sample_rate)
-    recording = sounddevice.rec(
-        frames,
+
+    frames = []
+    silence_blocks = 0
+    speech_detected = False
+    max_blocks = int(max_duration_seconds / block_duration)
+
+    with sounddevice.InputStream(
         samplerate=sample_rate,
         channels=1,
         dtype="int16",
-    )
-    sounddevice.wait()
+        blocksize=block_size,
+    ) as stream:
+        while True:
+            block, _ = stream.read(block_size)
+            frames.append(block.copy())
 
-    flattened = numpy.reshape(recording, (-1,))
+            amplitude = numpy.abs(block).mean()
+            if amplitude >= silence_threshold:
+                speech_detected = True
+                silence_blocks = 0
+            elif speech_detected:
+                silence_blocks += 1
+
+            total_blocks = len(frames)
+            if speech_detected and silence_blocks >= silence_limit:
+                logging.info(
+                    "Detected %.1f seconds of silence; stopping recording",
+                    silence_duration_seconds,
+                )
+                break
+
+            if total_blocks >= max_blocks:
+                logging.info(
+                    "Reached maximum recording duration of %.1f seconds; stopping",
+                    max_duration_seconds,
+                )
+                break
+
+    if not frames:
+        raise RuntimeError("No audio captured from microphone")
+
+    flattened = numpy.concatenate(frames, axis=0).reshape(-1)
     audio_bytes = flattened.tobytes()
 
     if not audio_bytes:
@@ -75,11 +120,19 @@ def record_microphone_audio(
 
 
 def process_microphone_command(
-    bridge: HttpBridge, *, duration_seconds: float = DEFAULT_DURATION_SECONDS
+    bridge: HttpBridge,
+    *,
+    max_duration_seconds: float = DEFAULT_MAX_DURATION_SECONDS,
+    silence_duration_seconds: float = DEFAULT_SILENCE_DURATION_SECONDS,
+    silence_threshold: float = DEFAULT_SILENCE_THRESHOLD,
 ) -> Optional[dict]:
     """Record a voice command and forward it to the bridge."""
 
-    audio_bytes = record_microphone_audio(duration_seconds=duration_seconds)
+    audio_bytes = record_microphone_audio(
+        max_duration_seconds=max_duration_seconds,
+        silence_duration_seconds=silence_duration_seconds,
+        silence_threshold=silence_threshold,
+    )
     return process_audio_stream([audio_bytes], bridge)
 
 
