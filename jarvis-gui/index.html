@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🤖</div>
+      <h1>JARVIS</h1>
+    </div>
+    <div class="status-indicator" id="statusIndicator">
+      <span class="status-dot"></span>
+      <span id="statusText">Готов</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Microphone Visualizer -->
+    <div class="visualizer-container">
+      <div class="microphone-button" id="micButton">
+        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <div class="pulse-ring"></div>
+      </div>
+      <p class="mic-hint">Нажмите или используйте Ctrl+Shift+Space</p>
+    </div>
+
+    <!-- Transcript Display -->
+    <div class="transcript-section">
+      <h3>Распознано:</h3>
+      <div class="transcript-box" id="transcriptBox">
+        <p class="transcript-placeholder">Скажите команду...</p>
+      </div>
+    </div>
+
+    <!-- Command Display -->
+    <div class="command-section">
+      <h3>Команда:</h3>
+      <div class="command-box" id="commandBox">
+        <code class="command-json">Ожидание...</code>
+      </div>
+    </div>
+
+    <!-- Response Display -->
+    <div class="response-section">
+      <h3>Результат:</h3>
+      <div class="response-box" id="responseBox">
+        <p class="response-text">-</p>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <h3>История команд:</h3>
+      <div class="history-list" id="historyList">
+        <!-- History items will be added dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Panel (Hidden by default) -->
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-header">
+      <h2>Настройки</h2>
+      <button class="close-btn" id="closeSettings">×</button>
+    </div>
+    <div class="settings-content">
+      <div class="setting-group">
+        <label>C# Core Endpoint:</label>
+        <input type="text" id="coreEndpoint" placeholder="http://localhost:5055" />
+      </div>
+      <div class="setting-group">
+        <label>OpenAI API Key:</label>
+        <input type="password" id="openaiKey" placeholder="sk-..." />
+      </div>
+      <div class="setting-group">
+        <label>Язык:</label>
+        <select id="language">
+          <option value="ru-RU">Русский</option>
+          <option value="en-US">English</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Горячая клавиша:</label>
+        <input type="text" id="hotkey" value="Ctrl+Shift+Space" readonly />
+      </div>
+      <button class="save-btn" id="saveSettings">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <div class="controls">
+    <button class="control-btn" id="settingsBtn">
+      ⚙️ Настройки
+    </button>
+    <button class="control-btn" id="clearHistoryBtn">
+      🗑️ Очистить историю
+    </button>
+    <button class="control-btn" id="minimizeBtn">
+      ➖ Свернуть в трей
+    </button>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
