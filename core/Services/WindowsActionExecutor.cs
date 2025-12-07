@@ -270,14 +270,13 @@ public class WindowsActionExecutor : IActionExecutor
             var fullPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
 
             // Validate path for security
-            var validationResult = _pathValidator.ValidatePath(fullPath);
-            if (!validationResult.IsValid)
+            if (!_pathValidator.IsSafePath(fullPath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Path validation failed: {validationResult.ErrorMessage}"
+                    Error = "Path validation failed: Access to this path is forbidden"
                 };
             }
 
@@ -345,14 +344,13 @@ public class WindowsActionExecutor : IActionExecutor
             var fullPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
 
             // Validate path for security
-            var validationResult = _pathValidator.ValidatePath(fullPath);
-            if (!validationResult.IsValid)
+            if (!_pathValidator.IsSafePath(fullPath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Path validation failed: {validationResult.ErrorMessage}"
+                    Error = "Path validation failed: Access to this path is forbidden"
                 };
             }
 
@@ -417,25 +415,23 @@ public class WindowsActionExecutor : IActionExecutor
             var destPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(destination));
 
             // Validate both paths for security
-            var sourceValidation = _pathValidator.ValidatePath(sourcePath);
-            if (!sourceValidation.IsValid)
+            if (!_pathValidator.IsSafePath(sourcePath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Source path validation failed: {sourceValidation.ErrorMessage}"
+                    Error = "Source path validation failed: Access to this path is forbidden"
                 };
             }
 
-            var destValidation = _pathValidator.ValidatePath(destPath);
-            if (!destValidation.IsValid)
+            if (!_pathValidator.IsSafePath(destPath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Destination path validation failed: {destValidation.ErrorMessage}"
+                    Error = "Destination path validation failed: Access to this path is forbidden"
                 };
             }
 
@@ -512,25 +508,23 @@ public class WindowsActionExecutor : IActionExecutor
             var destPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(destination));
 
             // Validate both paths for security
-            var sourceValidation = _pathValidator.ValidatePath(sourcePath);
-            if (!sourceValidation.IsValid)
+            if (!_pathValidator.IsSafePath(sourcePath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Source path validation failed: {sourceValidation.ErrorMessage}"
+                    Error = "Source path validation failed: Access to this path is forbidden"
                 };
             }
 
-            var destValidation = _pathValidator.ValidatePath(destPath);
-            if (!destValidation.IsValid)
+            if (!_pathValidator.IsSafePath(destPath))
             {
                 return new CommandResponse
                 {
                     Status = "error",
                     Result = null,
-                    Error = $"Destination path validation failed: {destValidation.ErrorMessage}"
+                    Error = "Destination path validation failed: Access to this path is forbidden"
                 };
             }
 
