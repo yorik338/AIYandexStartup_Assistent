@@ -36,10 +36,10 @@ def transcribe_audio_file(audio_path: Path) -> str:
             model=_transcription_model(),
             file=audio_file,
         )
-
+    logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
         raise RuntimeError("No transcription text returned")
-    logger.info("Voice transcript recognized: %s", response.text)
+    
     return response.text
 
 
