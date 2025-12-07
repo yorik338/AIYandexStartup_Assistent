@@ -1,13 +1,14 @@
 // JARVIS GUI - Electron Main Process
-const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow = null;
 let tray = null;
 
 // Create the main window
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const windowOptions = {
     width: 800,
     height: 600,
     minWidth: 600,
@@ -18,8 +19,15 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
     },
-    icon: path.join(__dirname, 'assets', 'icon.png'),
-  });
+  };
+
+  // Add icon if it exists
+  const iconPath = path.join(__dirname, 'assets', 'icon.png');
+  if (fs.existsSync(iconPath)) {
+    windowOptions.icon = iconPath;
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   mainWindow.loadFile('index.html');
 
@@ -40,7 +48,18 @@ function createWindow() {
 
 // Create system tray
 function createTray() {
-  tray = new Tray(path.join(__dirname, 'assets', 'tray-icon.png'));
+  const trayIconPath = path.join(__dirname, 'assets', 'tray-icon.png');
+
+  // Create a simple placeholder icon if file doesn't exist
+  let trayIcon;
+  if (fs.existsSync(trayIconPath)) {
+    trayIcon = trayIconPath;
+  } else {
+    // Create a simple 16x16 transparent icon as placeholder
+    trayIcon = nativeImage.createEmpty();
+  }
+
+  tray = new Tray(trayIcon);
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -136,12 +155,16 @@ ipcMain.on('minimize-to-tray', () => {
 
 ipcMain.on('update-tray-status', (event, status) => {
   // Update tray icon based on status (listening, idle, etc.)
+  if (!tray) return;
+
   const iconPath = path.join(
     __dirname,
     'assets',
     `tray-icon-${status}.png`
   );
-  if (tray) {
+
+  // Only update if icon exists
+  if (fs.existsSync(iconPath)) {
     tray.setImage(iconPath);
   }
 });
