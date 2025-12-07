@@ -25,18 +25,43 @@ class HttpBridge:
         return self._endpoint
 
     def send_command(self, command: Command) -> Optional[Dict[str, object]]:
-        payload = json.dumps(command.to_json()).encode()
-        logger.info("Sending command to C# bridge: %s", payload)
-        http_request = request.Request(
-            url=f"{self._endpoint}/action/execute",
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "User-Agent": "JarvisAssistant/1.0",
-                "Connection": "close",
-            },
-        )
-        return self._perform_request(http_request, context="bridge call")
+        payload_template = command.to_json()
+        application = payload_template.get("params", {}).get("application")
+
+        # Some prompts produce "known_*" aliases, but the registry contains the
+        # plain name. Try both to maximize the chance of a match.
+        candidates = [application]
+        if isinstance(application, str) and application.startswith("known_"):
+            candidates.append(application.removeprefix("known_"))
+
+        for candidate in candidates:
+            payload = json.dumps({
+                **payload_template,
+                "params": {**payload_template.get("params", {}), "application": candidate},
+            }).encode()
+
+            logger.info("Sending command to C# bridge: %s", payload)
+            http_request = request.Request(
+                url=f"{self._endpoint}/action/execute",
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "JarvisAssistant/1.0",
+                    "Connection": "close",
+                },
+            )
+
+            try:
+                response = self._perform_request(http_request, context="bridge call")
+                if response is not None:
+                    return response
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "Bridge call with application '%s' failed: %s", candidate, exc
+                )
+                continue
+
+        return None
 
     def get_status(self) -> Optional[Dict[str, object]]:
         """Fetch system status from the C# service."""
