@@ -59,6 +59,7 @@ public class ApplicationRegistry
 
     /// <summary>
     /// Scans the system for applications and updates the registry
+    /// NEW applications are ADDED to existing ones (merging, not replacing)
     /// </summary>
     public async Task ScanAndSaveAsync()
     {
@@ -66,7 +67,45 @@ public class ApplicationRegistry
         try
         {
             _logger.LogInformation("Scanning system for applications...");
-            _applications = await _scanner.ScanApplicationsAsync();
+
+            // Keep existing applications
+            var existingApps = new Dictionary<string, ApplicationInfo>(StringComparer.OrdinalIgnoreCase);
+            foreach (var app in _applications)
+            {
+                // Use path as unique key
+                existingApps[app.Path] = app;
+            }
+
+            _logger.LogInformation("Found {Count} existing applications in registry", existingApps.Count);
+
+            // Scan for new applications
+            var scannedApps = await _scanner.ScanApplicationsAsync();
+
+            // Merge: add new apps, update existing ones
+            int newCount = 0;
+            int updatedCount = 0;
+
+            foreach (var app in scannedApps)
+            {
+                if (existingApps.ContainsKey(app.Path))
+                {
+                    // Update existing app (in case metadata changed)
+                    existingApps[app.Path] = app;
+                    updatedCount++;
+                }
+                else
+                {
+                    // Add new app
+                    existingApps[app.Path] = app;
+                    newCount++;
+                }
+            }
+
+            // Update the applications list
+            _applications = existingApps.Values.ToList();
+
+            _logger.LogInformation("Scan complete: {Total} total apps ({New} new, {Updated} updated)",
+                _applications.Count, newCount, updatedCount);
 
             _logger.LogInformation("Saving {Count} applications to registry", _applications.Count);
             await SaveToFileAsync();
