@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"c:\\workspace\\AIYandexStartup_Assistent\\ai-python\")"
+      "Bash(dir \"c:\\workspace\\AIYandexStartup_Assistent\\ai-python\")",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(pip install:*)",
+      "Bash(timeout 3 python:*)",
+      "Bash(set:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

@@ -61,12 +61,15 @@ function startPythonAssistant() {
   const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
 
   try {
-    pythonProcess = spawn(pythonCmd, [pythonScriptPath], {
+    // -u flag disables Python stdout buffering for real-time output
+    pythonProcess = spawn(pythonCmd, ['-u', pythonScriptPath], {
       env: {
         ...process.env,
         JARVIS_CORE_ENDPOINT: config.coreEndpoint,
         OPENAI_API_KEY: config.openaiKey,
+        PYTHONUNBUFFERED: '1',
       },
+      cwd: path.join(__dirname, '..', 'ai-python'),
     });
 
     console.log('Python process spawned, PID:', pythonProcess.pid);
