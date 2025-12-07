@@ -20,6 +20,12 @@ public class ApplicationScanner
             @"C:\Program Files",
             @"C:\Program Files (x86)",
 
+            // GAMES - Special paths for game launchers (need deeper scanning)
+            @"C:\Program Files (x86)\Steam\steamapps\common",  // Steam games
+            @"C:\Program Files\Epic Games",                     // Epic Games
+            @"C:\GOG Games",                                    // GOG games
+            @"C:\Program Files\Riot Games",                     // Riot Games (Valorant, LoL)
+
             // LocalAppData - specific known folders only
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord"),
@@ -274,7 +280,32 @@ public class ApplicationScanner
         { "opera", "Browser" },
         { "brave", "Browser" },
 
-        // Entertainment
+        // Games (check for game-specific keywords)
+        { "counter-strike", "Games" },
+        { "cs2", "Games" },
+        { "csgo", "Games" },
+        { "dota", "Games" },
+        { "valorant", "Games" },
+        { "league of legends", "Games" },
+        { "minecraft", "Games" },
+        { "fortnite", "Games" },
+        { "apex", "Games" },
+        { "gta", "Games" },
+        { "witcher", "Games" },
+        { "cyberpunk", "Games" },
+        { "elden ring", "Games" },
+        { "terraria", "Games" },
+        { "rust", "Games" },
+        { "overwatch", "Games" },
+        { "warzone", "Games" },
+        { "battlefield", "Games" },
+        { "call of duty", "Games" },
+        { "fallout", "Games" },
+        { "skyrim", "Games" },
+        { "satisfactory", "Games" },
+        { "factorio", "Games" },
+
+        // Entertainment (launchers and media)
         { "spotify", "Entertainment" },
         { "steam", "Entertainment" },
         { "epic", "Entertainment" },
@@ -301,11 +332,11 @@ public class ApplicationScanner
 
     /// <summary>
     /// Scans the system for installed applications
-    /// OPTIMIZED: Parallel scanning with reduced depth for faster results
+    /// OPTIMIZED: Parallel scanning with depth 2 to find games in subfolders
     /// </summary>
-    /// <param name="maxDepth">Maximum directory depth to scan (default: 1, optimized for speed)</param>
+    /// <param name="maxDepth">Maximum directory depth to scan (default: 2, finds games and apps)</param>
     /// <returns>List of discovered applications</returns>
-    public async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 1)
+    public async Task<List<ApplicationInfo>> ScanApplicationsAsync(int maxDepth = 2)
     {
         _logger.LogInformation("Starting OPTIMIZED application scan with max depth: {MaxDepth}", maxDepth);
 
