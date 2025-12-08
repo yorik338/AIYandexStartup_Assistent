@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 import os
 from typing import Optional
@@ -47,7 +48,20 @@ def _build_http_client(proxy_url: Optional[str]) -> Optional[httpx.Client]:
     if not proxy_url:
         return None
 
-    return httpx.Client(proxies=proxy_url, follow_redirects=True, trust_env=False)
+    signature = inspect.signature(httpx.Client.__init__).parameters
+    client_kwargs = {
+        "follow_redirects": True,
+        "trust_env": False,
+    }
+
+    if "proxies" in signature:
+        client_kwargs["proxies"] = proxy_url
+    elif "proxy" in signature:
+        client_kwargs["proxy"] = proxy_url
+    else:
+        raise RuntimeError("httpx.Client does not support proxy configuration")
+
+    return httpx.Client(**client_kwargs)
 
 
 def build_openai_client(*, api_key: Optional[str] = None, base_url: Optional[str] = None) -> OpenAI:
