@@ -6,10 +6,10 @@ import io
 import logging
 import os
 from pathlib import Path
-from typing import Iterable
+from typing import BinaryIO, Iterable
 import wave
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError, PermissionDeniedError
 
 logger = logging.getLogger(__name__)
 
@@ -26,16 +26,31 @@ def _transcription_model() -> str:
     return os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1")
 
 
+def _request_transcription(file: BinaryIO):
+    client = _build_client()
+    try:
+        return client.audio.transcriptions.create(
+            model=_transcription_model(),
+            file=file,
+        )
+    except PermissionDeniedError as exc:
+        logger.error("OpenAI transcription request was rejected: %s", exc)
+        raise RuntimeError(
+            "OpenAI denied the transcription request. If your region is not supported, "
+            "configure OPENAI_API_BASE to point to a compliant endpoint or retry "
+            "from a supported network."
+        ) from exc
+    except OpenAIError as exc:
+        logger.error("OpenAI transcription request failed: %s", exc)
+        raise RuntimeError("OpenAI transcription request failed") from exc
+
+
 def transcribe_audio_file(audio_path: Path) -> str:
     """Transcribe a local audio file using ChatGPT/Whisper."""
 
     logger.info("Transcribing audio file: %s", audio_path)
-    client = _build_client()
     with audio_path.open("rb") as audio_file:
-        response = client.audio.transcriptions.create(
-            model=_transcription_model(),
-            file=audio_file,
-        )
+        response = _request_transcription(audio_file)
     logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
         raise RuntimeError("No transcription text returned")
@@ -80,11 +95,7 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
     buffer.seek(0)
     buffer.name = "stream.wav"
 
-    client = _build_client()
-    response = client.audio.transcriptions.create(
-        model=_transcription_model(),
-        file=buffer,
-    )
+    response = _request_transcription(buffer)
 
     logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
