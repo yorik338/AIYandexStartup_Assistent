@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JARVIS Assistant</title>
+  <title>Ayvor Assistant</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
   <div class="header">
     <div class="logo">
       <div class="logo-icon">🤖</div>
-      <h1>JARVIS</h1>
+      <h1>AYVOR</h1>
     </div>
     <div class="header-info">
       <div class="apps-counter" id="appsCounter" title="Нажмите для сканирования">
@@ -25,56 +25,122 @@
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="container">
-    <!-- Microphone Visualizer -->
-    <div class="visualizer-container">
-      <div class="microphone-button" id="micButton">
-        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-          <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
-        <div class="pulse-ring"></div>
-      </div>
-      <p class="mic-hint">Нажмите или используйте Ctrl+Shift+Space</p>
-    </div>
+  <!-- Main Content - Clean Input Area -->
+  <div class="main-area">
+    <div class="input-section">
+      <h2 class="welcome-text">Чем могу помочь?</h2>
+      <p class="hint-text">Введите команду или нажмите на микрофон</p>
 
-    <!-- Transcript Display -->
-    <div class="transcript-section">
-      <h3>Распознано:</h3>
-      <div class="transcript-box" id="transcriptBox">
-        <p class="transcript-placeholder">Скажите команду...</p>
+      <!-- Combined Input: Text + Mic -->
+      <div class="unified-input">
+        <input type="text" id="commandInput" class="command-input" placeholder="открой Chrome, запусти Telegram, покажи рабочий стол..." autocomplete="off" />
+        <button class="mic-btn" id="micButton" title="Голосовой ввод (Ctrl+Shift+Space)">
+          <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+        <button class="send-btn" id="sendBtn" title="Отправить (Enter)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </div>
-    </div>
 
-    <!-- Command Display -->
-    <div class="command-section">
-      <h3>Команда:</h3>
-      <div class="command-box" id="commandBox">
-        <code class="command-json">Ожидание...</code>
-      </div>
-    </div>
-
-    <!-- Response Display -->
-    <div class="response-section">
-      <h3>Результат:</h3>
-      <div class="response-box" id="responseBox">
-        <p class="response-text">-</p>
-      </div>
-    </div>
-
-    <!-- History -->
-    <div class="history-section">
-      <h3>История команд:</h3>
-      <div class="history-list" id="historyList">
-        <!-- History items will be added dynamically -->
+      <!-- Quick Commands -->
+      <div class="quick-commands">
+        <button class="quick-cmd" data-cmd="открой Chrome">🌐 Chrome</button>
+        <button class="quick-cmd" data-cmd="открой Telegram">💬 Telegram</button>
+        <button class="quick-cmd" data-cmd="покажи рабочий стол">🖥️ Рабочий стол</button>
+        <button class="quick-cmd" data-cmd="скриншот">📸 Скриншот</button>
+        <button class="quick-cmd" data-cmd="выключи звук">🔇 Mute</button>
       </div>
     </div>
   </div>
 
-  <!-- Settings Panel (Hidden by default) -->
+  <!-- Bottom Panel - Results, History, Log -->
+  <div class="bottom-panel" id="bottomPanel">
+    <div class="panel-resize-handle" id="panelResizeHandle"></div>
+    <div class="panel-tabs">
+      <button class="panel-tab active" data-tab="result">📋 Результат</button>
+      <button class="panel-tab" data-tab="history">📜 История</button>
+      <button class="panel-tab" data-tab="log">🔧 Лог</button>
+    </div>
+
+    <div class="panel-content">
+      <!-- Result Tab -->
+      <div class="tab-content active" id="resultTab">
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">Распознано:</div>
+            <div class="result-value" id="transcriptBox">-</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Команда:</div>
+            <div class="result-value code" id="commandBox">-</div>
+          </div>
+          <div class="result-item full-width">
+            <div class="result-label">Результат:</div>
+            <div class="result-value" id="responseBox">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div class="tab-content" id="historyTab">
+        <div class="history-list" id="historyList">
+          <div class="history-placeholder">История команд пуста</div>
+        </div>
+      </div>
+
+      <!-- Log Tab -->
+      <div class="tab-content" id="logTab">
+        <div class="log-header">
+          <span>Системный лог</span>
+          <div class="log-actions">
+            <button class="log-btn" id="copyErrorBtn" title="Копировать">📋</button>
+            <button class="log-btn" id="clearLogBtn" title="Очистить">🗑️</button>
+          </div>
+        </div>
+        <div class="log-content" id="errorLogContent">
+          <span class="log-placeholder">Лог пуст...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Visualizer Bar -->
+    <div class="visualizer-bar" id="visualizerBar">
+      <div class="visualizer-label">🎤</div>
+      <div class="visualizer-bars" id="visualizerBars">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="visualizer-status" id="visualizerStatus">Ожидание...</div>
+    </div>
+  </div>
+
+  <!-- Apps List Modal -->
+  <div class="modal-overlay" id="appsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📦 Приложения</h2>
+        <button class="close-btn" id="closeAppsModal">×</button>
+      </div>
+      <div class="modal-search">
+        <input type="text" id="appsSearchInput" placeholder="Поиск приложений..." />
+      </div>
+      <div class="apps-list" id="appsList">
+        <div class="apps-loading">Загрузка...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-header">
       <h2>Настройки</h2>
@@ -104,56 +170,11 @@
     </div>
   </div>
 
-  <!-- Audio Visualizer & Error Log -->
-  <div class="audio-visualizer" id="audioVisualizer">
-    <div class="visualizer-left">
-      <div class="visualizer-label">Микрофон:</div>
-      <div class="visualizer-bars" id="visualizerBars">
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
-      </div>
-      <div class="visualizer-status" id="visualizerStatus">Ожидание...</div>
-    </div>
-    <div class="error-log" id="errorLog">
-      <div class="error-log-header">
-        <span>Лог:</span>
-        <button class="copy-btn" id="copyErrorBtn" title="Копировать">📋</button>
-        <button class="clear-log-btn" id="clearLogBtn" title="Очистить">🗑️</button>
-      </div>
-      <div class="error-log-content" id="errorLogContent">
-        <span class="log-placeholder">Ошибки будут показаны здесь...</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bottom Controls -->
-  <div class="controls">
-    <button class="control-btn" id="scanAppsBtn">
-      🔍 Сканировать приложения
-    </button>
-    <button class="control-btn" id="settingsBtn">
-      ⚙️ Настройки
-    </button>
-    <button class="control-btn" id="clearHistoryBtn">
-      🗑️ Очистить историю
-    </button>
-    <button class="control-btn" id="minimizeBtn">
-      ➖ Свернуть в трей
-    </button>
+  <!-- Floating Controls -->
+  <div class="floating-controls">
+    <button class="float-btn" id="scanAppsBtn" title="Сканировать приложения">🔍</button>
+    <button class="float-btn" id="settingsBtn" title="Настройки">⚙️</button>
+    <button class="float-btn" id="minimizeBtn" title="Свернуть в трей">➖</button>
   </div>
 
   <script src="renderer.js"></script>

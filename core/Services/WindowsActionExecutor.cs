@@ -30,6 +30,7 @@ public class WindowsActionExecutor : IActionExecutor
             return request.Action switch
             {
                 "open_app" => await OpenApplication(request),
+                "run_exe" => await RunExecutable(request),
                 "search_files" => await SearchFiles(request),
                 "adjust_setting" => await AdjustSetting(request),
                 "system_status" => await GetSystemStatus(request),
@@ -139,6 +140,106 @@ public class WindowsActionExecutor : IActionExecutor
                 Status = "error",
                 Result = null,
                 Error = $"Failed to open {appName}: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> RunExecutable(CommandRequest request)
+    {
+        var exePath = request.Params["path"].ToString();
+        if (string.IsNullOrWhiteSpace(exePath))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Executable path is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Running executable: {Path}", exePath);
+
+            // Expand environment variables and make absolute path
+            var fullPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(exePath));
+
+            // Validate path for security
+            if (!_pathValidator.IsSafePath(fullPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Path validation failed: Access to this path is forbidden"
+                };
+            }
+
+            // Check if file exists
+            if (!File.Exists(fullPath))
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Executable not found: {fullPath}"
+                };
+            }
+
+            // Verify it's an executable file
+            var extension = Path.GetExtension(fullPath).ToLowerInvariant();
+            if (extension != ".exe")
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Invalid file type: {extension}. Only .exe files are allowed."
+                };
+            }
+
+            // Build process start info
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = fullPath,
+                UseShellExecute = true
+            };
+
+            var process = Process.Start(startInfo);
+
+            if (process == null)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = $"Failed to start executable: {fullPath}"
+                };
+            }
+
+            await Task.Delay(500); // Give process time to start
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    path = fullPath,
+                    fileName = Path.GetFileName(fullPath),
+                    processId = process.Id,
+                    message = $"Successfully started {Path.GetFileName(fullPath)}"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to run executable: {Path}", exePath);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to run executable: {ex.Message}"
             };
         }
     }

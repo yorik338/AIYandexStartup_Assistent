@@ -12,6 +12,7 @@ public class CommandValidator : ICommandValidator
     private static readonly Dictionary<string, List<string>> AllowedActions = new()
     {
         { "open_app", new List<string> { "application" } },
+        { "run_exe", new List<string> { "path" } },
         { "search_files", new List<string> { "query" } },
         { "adjust_setting", new List<string> { "setting", "value" } },
         { "system_status", new List<string>() },

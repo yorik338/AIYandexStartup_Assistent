@@ -1,7 +1,7 @@
 {
-  "name": "jarvis-gui",
+  "name": "ayvor-assistant",
   "version": "1.0.0",
-  "description": "JARVIS AI Assistant - Desktop GUI",
+  "description": "Ayvor AI Assistant - Умный голосовой помощник для Windows",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,10 +9,18 @@
     "build": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["jarvis", "ai", "assistant", "voice", "electron"],
-  "author": "JARVIS Team",
+  "keywords": [
+    "ayvor",
+    "ai",
+    "assistant",
+    "voice",
+    "electron",
+    "windows",
+    "startup"
+  ],
+  "author": "Ayvor Team",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^39.2.6"
+    "electron": "^28.3.3"
   }
 }

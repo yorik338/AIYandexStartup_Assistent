@@ -1,10 +1,10 @@
-// JARVIS GUI - Electron Main Process
+// Ayvor Assistant - Electron Main Process
 const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Config file path
-const configPath = path.join(app.getPath('userData'), 'jarvis-config.json');
+// Config file path - will be set after app is ready
+let configPath = null;
 
 // Load .env file from project root
 function loadEnvFile() {
@@ -64,7 +64,7 @@ function saveConfigToFile(config) {
   }
 }
 
-let savedConfig = loadConfigFromFile();
+let savedConfig = null;
 
 let mainWindow = null;
 let tray = null;
@@ -72,10 +72,10 @@ let tray = null;
 // Create the main window
 function createWindow() {
   const windowOptions = {
-    width: 800,
-    height: 600,
-    minWidth: 600,
-    minHeight: 400,
+    width: 1600,
+    height: 1000,
+    minWidth: 1000,
+    minHeight: 700,
     frame: true,
     backgroundColor: '#1a1a2e',
     webPreferences: {
@@ -123,26 +123,26 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show JARVIS',
+      label: 'Показать Ayvor',
       click: () => {
         mainWindow.show();
       },
     },
     {
-      label: 'Start Listening',
+      label: 'Слушать',
       click: () => {
         mainWindow.webContents.send('start-listening');
       },
     },
     {
-      label: 'Stop Listening',
+      label: 'Остановить',
       click: () => {
         mainWindow.webContents.send('stop-listening');
       },
     },
     { type: 'separator' },
     {
-      label: 'Settings',
+      label: 'Настройки',
       click: () => {
         mainWindow.show();
         mainWindow.webContents.send('show-settings');
@@ -150,7 +150,7 @@ function createTray() {
     },
     { type: 'separator' },
     {
-      label: 'Quit',
+      label: 'Выход',
       click: () => {
         app.isQuitting = true;
         app.quit();
@@ -158,7 +158,7 @@ function createTray() {
     },
   ]);
 
-  tray.setToolTip('JARVIS Assistant');
+  tray.setToolTip('Ayvor Assistant');
   tray.setContextMenu(contextMenu);
 
   // Show window on tray icon click
@@ -185,6 +185,10 @@ function registerHotkeys() {
 
 // App ready
 app.whenReady().then(() => {
+  // Initialize config path after app is ready
+  configPath = path.join(app.getPath('userData'), 'ayvor-config.json');
+  savedConfig = loadConfigFromFile();
+
   createWindow();
   createTray();
   registerHotkeys();
@@ -233,7 +237,7 @@ ipcMain.handle('get-config', async () => {
   // Return saved configuration (env vars override file config)
   return {
     ...savedConfig,
-    coreEndpoint: process.env.JARVIS_CORE_ENDPOINT || savedConfig.coreEndpoint,
+    coreEndpoint: process.env.AYVOR_CORE_ENDPOINT || savedConfig.coreEndpoint,
     openaiKey: process.env.OPENAI_API_KEY || savedConfig.openaiKey,
   };
 });
