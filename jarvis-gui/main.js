@@ -3,6 +3,69 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } =
 const path = require('path');
 const fs = require('fs');
 
+// Config file path
+const configPath = path.join(app.getPath('userData'), 'jarvis-config.json');
+
+// Load .env file from project root
+function loadEnvFile() {
+  const envPath = path.join(__dirname, '..', '.env');
+  const env = {};
+  try {
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      content.split('\n').forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#')) {
+          const [key, ...valueParts] = trimmed.split('=');
+          if (key && valueParts.length > 0) {
+            env[key.trim()] = valueParts.join('=').trim();
+          }
+        }
+      });
+      console.log('Loaded .env file from:', envPath);
+    }
+  } catch (err) {
+    console.error('Error loading .env file:', err);
+  }
+  return env;
+}
+
+const envConfig = loadEnvFile();
+
+// Default config
+const defaultConfig = {
+  coreEndpoint: 'http://localhost:5055',
+  openaiKey: envConfig.OPENAI_API_KEY || '', // Load from .env by default
+  language: 'ru-RU',
+  hotkey: 'CommandOrControl+Shift+Space',
+};
+
+// Load config from file
+function loadConfigFromFile() {
+  try {
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      return { ...defaultConfig, ...JSON.parse(data) };
+    }
+  } catch (err) {
+    console.error('Error loading config:', err);
+  }
+  return defaultConfig;
+}
+
+// Save config to file
+function saveConfigToFile(config) {
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    return true;
+  } catch (err) {
+    console.error('Error saving config:', err);
+    return false;
+  }
+}
+
+let savedConfig = loadConfigFromFile();
+
 let mainWindow = null;
 let tray = null;
 
@@ -36,13 +99,10 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
-  // Handle window close - minimize to tray instead
-  mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
-    return false;
+  // Handle window close - quit the app completely
+  mainWindow.on('close', () => {
+    app.isQuitting = true;
+    app.quit();
   });
 }
 
@@ -170,17 +230,19 @@ ipcMain.on('update-tray-status', (event, status) => {
 });
 
 ipcMain.handle('get-config', async () => {
-  // Return saved configuration
+  // Return saved configuration (env vars override file config)
   return {
-    coreEndpoint: process.env.JARVIS_CORE_ENDPOINT || 'http://localhost:5055',
-    openaiKey: process.env.OPENAI_API_KEY || '',
-    language: 'ru-RU',
-    hotkey: 'CommandOrControl+Shift+Space',
+    ...savedConfig,
+    coreEndpoint: process.env.JARVIS_CORE_ENDPOINT || savedConfig.coreEndpoint,
+    openaiKey: process.env.OPENAI_API_KEY || savedConfig.openaiKey,
   };
 });
 
 ipcMain.handle('save-config', async (event, config) => {
-  // Save configuration (you can use electron-store or similar)
-  console.log('Saving config:', config);
-  return { success: true };
+  console.log('Saving config to:', configPath);
+  const success = saveConfigToFile(config);
+  if (success) {
+    savedConfig = config;
+  }
+  return { success };
 });
