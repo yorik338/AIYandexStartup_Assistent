@@ -9,25 +9,17 @@ from pathlib import Path
 from typing import BinaryIO, Iterable
 import wave
 
-from openai import OpenAI, OpenAIError, PermissionDeniedError
+from openai import OpenAIError, PermissionDeniedError
+
+from .openai_client import build_openai_client
 
 logger = logging.getLogger(__name__)
-
-
-def _build_client() -> OpenAI:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
-
-    return OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_API_BASE"))
-
-
 def _transcription_model() -> str:
     return os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1")
 
 
 def _request_transcription(file: BinaryIO):
-    client = _build_client()
+    client = build_openai_client()
     try:
         return client.audio.transcriptions.create(
             model=_transcription_model(),
