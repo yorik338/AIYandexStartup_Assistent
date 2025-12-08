@@ -8,4 +8,5 @@ __all__ = [
     "speech",
     "bridge",
     "pipeline",
+    "openai_client",
 ]

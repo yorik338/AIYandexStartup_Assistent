@@ -9,13 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Protocol
 from uuid import uuid4
-from dotenv import load_dotenv
-from openai import OpenAI
 
 from . import prompts
+from .openai_client import build_openai_client
 
 logger = logging.getLogger(__name__)
-load_dotenv()
 
 class LLMBackend(Protocol):
     """A protocol that abstracts a chat completion backend."""
@@ -93,7 +91,7 @@ class ChatGPTBackend:
         if not key:
             raise RuntimeError("OPENAI_API_KEY is not configured")
 
-        self._client = OpenAI(api_key=key, base_url=base_url or os.getenv("OPENAI_API_BASE"))
+        self._client = build_openai_client(api_key=key, base_url=base_url)
         self._model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     def complete(self, prompt: str) -> str:  # type: ignore[override]
