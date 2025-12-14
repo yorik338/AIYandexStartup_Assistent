@@ -13,12 +13,14 @@ public class WindowsActionExecutor : IActionExecutor
     private readonly ILogger<WindowsActionExecutor> _logger;
     private readonly PathValidator _pathValidator;
     private readonly ApplicationRegistry _appRegistry;
+    private readonly WindowCaptureService _windowCaptureService;
 
-    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger, ApplicationRegistry appRegistry)
+    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger, ApplicationRegistry appRegistry, WindowCaptureService windowCaptureService)
     {
         _logger = logger;
         _pathValidator = new PathValidator();
         _appRegistry = appRegistry;
+        _windowCaptureService = windowCaptureService;
     }
 
     public async Task<CommandResponse> ExecuteAsync(CommandRequest request)
@@ -40,6 +42,7 @@ public class WindowsActionExecutor : IActionExecutor
                 "copy_file" => await CopyFile(request),
                 "scan_applications" => await ScanApplications(request),
                 "list_applications" => await ListApplications(request),
+                "capture_window" => await CaptureWindow(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -767,6 +770,63 @@ public class WindowsActionExecutor : IActionExecutor
                 Status = "error",
                 Result = null,
                 Error = $"Failed to list applications: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> CaptureWindow(CommandRequest request)
+    {
+        var applicationName = request.Params["application"].ToString();
+        if (string.IsNullOrWhiteSpace(applicationName))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Application name is empty"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Capturing window for application: {AppName}", applicationName);
+
+            var captureResult = await _windowCaptureService.CaptureWindowAsync(applicationName);
+
+            if (!captureResult.Success)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = captureResult.Error
+                };
+            }
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    application = captureResult.Application,
+                    windowTitle = captureResult.WindowTitle,
+                    processName = captureResult.ProcessName,
+                    width = captureResult.Width,
+                    height = captureResult.Height,
+                    image = captureResult.ImageBase64,
+                    capturedAt = captureResult.CapturedAt.ToString("O")
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to capture window for application: {AppName}", applicationName);
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to capture window: {ex.Message}"
             };
         }
     }

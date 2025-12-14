@@ -28,7 +28,9 @@
       "Bash(dotnet build:*)",
       "Bash(taskkill:*)",
       "Bash(cmd.exe /c \"taskkill /F /IM JarvisCore.exe\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

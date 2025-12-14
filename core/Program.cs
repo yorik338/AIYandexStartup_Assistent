@@ -20,6 +20,7 @@ builder.Host.UseSerilog();
 // Register services
 builder.Services.AddSingleton<ApplicationScanner>();
 builder.Services.AddSingleton<ApplicationRegistry>();
+builder.Services.AddSingleton<WindowCaptureService>();
 builder.Services.AddSingleton<IActionExecutor, WindowsActionExecutor>();
 builder.Services.AddSingleton<ICommandValidator, CommandValidator>();
 
@@ -76,9 +77,9 @@ app.MapGet("/", () =>
         },
         availableActions = new[]
         {
-            "open_app", "search_files", "adjust_setting", "system_status",
+            "open_app", "run_exe", "search_files", "adjust_setting", "system_status",
             "create_folder", "delete_folder", "move_file", "copy_file",
-            "scan_applications", "list_applications"
+            "scan_applications", "list_applications", "capture_window"
         }
     });
 });
