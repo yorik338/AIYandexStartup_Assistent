@@ -15,7 +15,7 @@ DEFAULT_BRIDGE_ENDPOINT = "http://localhost:5055"
 DEFAULT_SAMPLE_RATE = 16_000
 DEFAULT_MAX_DURATION_SECONDS = 30.0
 DEFAULT_SILENCE_DURATION_SECONDS = 1.0
-DEFAULT_SILENCE_THRESHOLD = 500
+DEFAULT_SILENCE_THRESHOLD = 200
 
 
 def resolve_bridge_endpoint() -> str:
@@ -28,6 +28,26 @@ def resolve_bridge_endpoint() -> str:
 
     logging.info("Using default bridge endpoint: %s", DEFAULT_BRIDGE_ENDPOINT)
     return DEFAULT_BRIDGE_ENDPOINT
+
+
+def resolve_silence_threshold() -> float:
+    """Return the silence threshold, honoring the ``MIC_SILENCE_THRESHOLD`` env var."""
+
+    raw_value = os.getenv("MIC_SILENCE_THRESHOLD")
+    if raw_value:
+        try:
+            threshold = float(raw_value)
+        except ValueError as exc:
+            raise RuntimeError(
+                "MIC_SILENCE_THRESHOLD must be a valid number"
+            ) from exc
+
+        logging.info(
+            "Using silence threshold override from MIC_SILENCE_THRESHOLD: %.1f", threshold
+        )
+        return threshold
+
+    return DEFAULT_SILENCE_THRESHOLD
 
 
 def _load_dependency(name: str):
@@ -73,6 +93,7 @@ def record_microphone_audio(
     frames = []
     silence_blocks = 0
     speech_detected = False
+    logged_detection = False
     max_blocks = int(max_duration_seconds / block_duration)
 
     with sounddevice.InputStream(
@@ -85,10 +106,17 @@ def record_microphone_audio(
             block, _ = stream.read(block_size)
             frames.append(block.copy())
 
-            amplitude = numpy.abs(block).mean()
+            amplitude = numpy.abs(block).max()
             if amplitude >= silence_threshold:
                 speech_detected = True
                 silence_blocks = 0
+                if not logged_detection:
+                    logging.info(
+                        "Speech detected with peak amplitude %.0f (threshold %.0f)",
+                        amplitude,
+                        silence_threshold,
+                    )
+                    logged_detection = True
             elif speech_detected:
                 silence_blocks += 1
 
@@ -147,7 +175,9 @@ def main() -> None:
         return
 
     try:
-        result = process_microphone_command(bridge)
+        result = process_microphone_command(
+            bridge, silence_threshold=resolve_silence_threshold()
+        )
     except RuntimeError as exc:
         logging.error("Unable to capture microphone input: %s", exc)
         return
