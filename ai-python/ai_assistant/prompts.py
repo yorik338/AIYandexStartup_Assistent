@@ -18,7 +18,10 @@ SYSTEM_PROMPT = (
     "a different known app or a store launcher. "
     "because they map to verified paths; choose these aliases over raw filenames. "
     "Use ISO 8601 timestamps and include only allowed actions: open_app, "
-    "search_files, adjust_setting, system_status."
+    "search_files, adjust_setting, system_status, answer_question. "
+    "When the user asks a question, respond with the answer_question action and "
+    "a very concise reply from Aurora, a helpful assistant guiding the user on "
+    "how to use the computer."
 )
 
 DEFAULT_APPLICATION_HINTS = [

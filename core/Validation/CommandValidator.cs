@@ -22,7 +22,8 @@ public class CommandValidator : ICommandValidator
         { "copy_file", new List<string> { "source", "destination" } },
         { "scan_applications", new List<string>() },
         { "list_applications", new List<string>() },
-        { "capture_window", new List<string> { "application" } }
+        { "capture_window", new List<string> { "application" } },
+        { "answer_question", new List<string> { "answer" } }
     };
 
     public ValidationResult Validate(CommandRequest request)
