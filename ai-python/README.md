@@ -36,5 +36,6 @@ following before running the assistant:
 - `ALL_PROXY`
 
 The first configured variable in the list above is used for both chat and
-transcription requests. If no proxy variables are present the client will
+transcription requests. If no proxy variables are present or you explicitly
+set `OPENAI_PROXY_MODE=no_proxy` (or `PROXY_MODE=no_proxy`) the client will
 connect directly to the configured `OPENAI_API_BASE`.
