@@ -43,6 +43,7 @@ public class WindowsActionExecutor : IActionExecutor
                 "scan_applications" => await ScanApplications(request),
                 "list_applications" => await ListApplications(request),
                 "capture_window" => await CaptureWindow(request),
+                "answer_question" => await AnswerQuestion(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -828,6 +829,87 @@ public class WindowsActionExecutor : IActionExecutor
                 Result = null,
                 Error = $"Failed to capture window: {ex.Message}"
             };
+        }
+    }
+
+    private async Task<CommandResponse> AnswerQuestion(CommandRequest request)
+    {
+        request.Params.TryGetValue("answer", out var answerRaw);
+        request.Params.TryGetValue("question", out var questionRaw);
+
+        var answerText = answerRaw?.ToString();
+        if (string.IsNullOrWhiteSpace(answerText))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Answer text is empty"
+            };
+        }
+
+        var questionText = questionRaw?.ToString();
+        _logger.LogInformation("Answering question. Question: {Question}. Answer: {Answer}", questionText ?? "<not provided>", answerText);
+
+        await SpeakTextAsync(answerText);
+
+        return new CommandResponse
+        {
+            Status = "ok",
+            Result = new
+            {
+                question = questionText,
+                answer = answerText,
+                spoken = OperatingSystem.IsWindows(),
+                logged = true,
+                message = "Answer delivered"
+            },
+            Error = null
+        };
+    }
+
+    private async Task SpeakTextAsync(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            _logger.LogWarning("Cannot speak empty text");
+            return;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            _logger.LogInformation("Skipping speech synthesis because OS is not Windows");
+            return;
+        }
+
+        try
+        {
+            // Use PowerShell to perform text-to-speech without adding new dependencies
+            var escapedText = text.Replace("'", "''");
+            var command = $"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('{escapedText}')";
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -Command \"{command}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+                _logger.LogInformation("Speech synthesis finished with exit code {ExitCode}", process.ExitCode);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to start speech synthesis process");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to synthesize speech for answer");
         }
     }
 }
