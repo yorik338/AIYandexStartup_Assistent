@@ -28,9 +28,46 @@ _PROXY_ENV_VARS = (
     "all_proxy",
 )
 
+_PROXY_MODE_ENV_VARS = (
+    "OPENAI_PROXY_MODE",
+    "PROXY_MODE",
+)
+
+_DISABLED_PROXY_VALUES = {
+    "noproxy",
+    "no_proxy",
+    "no-proxy",
+    "no proxy",
+    "direct",
+    "off",
+    "false",
+    "0",
+}
+
+
+def _proxy_mode_is_disabled() -> bool:
+    """Return True when the environment explicitly disables proxy usage."""
+
+    for env_var in _PROXY_MODE_ENV_VARS:
+        value = os.getenv(env_var)
+        if value is None:
+            continue
+
+        normalized_value = value.strip().lower()
+        if normalized_value in _DISABLED_PROXY_VALUES:
+            logger.info(
+                "Proxy mode explicitly disabled via %s (value=%s)", env_var, value
+            )
+            return True
+
+    return False
+
 
 def _resolve_proxy_url() -> Optional[str]:
     """Return the first configured proxy URL from the environment."""
+
+    if _proxy_mode_is_disabled():
+        return None
 
     for env_var in _PROXY_ENV_VARS:
         proxy_url = os.getenv(env_var)
