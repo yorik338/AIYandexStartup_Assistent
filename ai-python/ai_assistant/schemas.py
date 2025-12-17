@@ -48,6 +48,7 @@ ALLOWED_ACTIONS = {
     "search_files": ["query"],
     "adjust_setting": ["setting", "value"],
     "system_status": [],
+    "answer_question": ["answer"],
 }
 
 
