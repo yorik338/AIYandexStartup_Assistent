@@ -132,3 +132,16 @@ def build_prompt(user_message: str, *, available_apps: Optional[Iterable[str]] =
 
     sections = [SYSTEM_PROMPT, application_context, format_reminder, "", f"User: {user_message}", "Assistant:"]
     return "\n".join([part for part in sections if part])
+
+
+def build_answer_prompt(user_message: str) -> str:
+    """Construct a lean prompt to answer general user questions."""
+
+    return "\n".join(
+        [
+            "You are Aurora, a concise Russian-speaking assistant.",
+            "Ответь коротко и по делу, если тебе задают вопрос.",
+            "User: " + user_message,
+            "Assistant:",
+        ]
+    )

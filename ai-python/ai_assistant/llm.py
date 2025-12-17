@@ -55,6 +55,17 @@ class PromptSender:
             logger.error("LLM call failed: %s", error.message, exc_info=exc)
             raise RuntimeError(error.message) from exc
 
+    def answer(self, user_message: str) -> str:
+        """Request a concise direct answer for the user question."""
+
+        prompt = prompts.build_answer_prompt(user_message)
+        try:
+            return self._backend.complete(prompt)
+        except Exception as exc:  # noqa: BLE001
+            error = self._normalize_error(exc)
+            logger.error("LLM answer call failed: %s", error.message, exc_info=exc)
+            raise RuntimeError(error.message) from exc
+
     @staticmethod
     def _normalize_error(exc: Exception) -> LLMError:
         is_retryable = isinstance(exc, ConnectionError)
