@@ -44,6 +44,10 @@ public class WindowsActionExecutor : IActionExecutor
                 "list_applications" => await ListApplications(request),
                 "capture_window" => await CaptureWindow(request),
                 "answer_question" => await AnswerQuestion(request),
+                "show_desktop" => await ShowDesktop(request),
+                "screenshot" => await TakeScreenshot(request),
+                "mute" => await ToggleMute(request),
+                "set_volume" => await SetVolume(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -66,7 +70,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> OpenApplication(CommandRequest request)
     {
-        var appName = request.Params["application"].ToString();
+        if (!request.Params.TryGetValue("application", out var appNameObj) || appNameObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: application"
+            };
+        }
+
+        var appName = appNameObj.ToString();
         if (string.IsNullOrWhiteSpace(appName))
         {
             return new CommandResponse
@@ -150,7 +164,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> RunExecutable(CommandRequest request)
     {
-        var exePath = request.Params["path"].ToString();
+        if (!request.Params.TryGetValue("path", out var exePathObj) || exePathObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: path"
+            };
+        }
+
+        var exePath = exePathObj.ToString();
         if (string.IsNullOrWhiteSpace(exePath))
         {
             return new CommandResponse
@@ -250,7 +274,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> SearchFiles(CommandRequest request)
     {
-        var query = request.Params["query"].ToString();
+        if (!request.Params.TryGetValue("query", out var queryObj) || queryObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: query"
+            };
+        }
+
+        var query = queryObj.ToString();
         if (string.IsNullOrWhiteSpace(query))
         {
             return new CommandResponse
@@ -314,8 +348,28 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> AdjustSetting(CommandRequest request)
     {
-        var setting = request.Params["setting"].ToString();
-        var value = request.Params["value"].ToString();
+        if (!request.Params.TryGetValue("setting", out var settingObj) || settingObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: setting"
+            };
+        }
+
+        if (!request.Params.TryGetValue("value", out var valueObj) || valueObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: value"
+            };
+        }
+
+        var setting = settingObj.ToString();
+        var value = valueObj.ToString();
 
         _logger.LogInformation("Adjusting setting: {Setting} to {Value}", setting, value);
 
@@ -366,7 +420,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> CreateFolder(CommandRequest request)
     {
-        var path = request.Params["path"].ToString();
+        if (!request.Params.TryGetValue("path", out var pathObj) || pathObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: path"
+            };
+        }
+
+        var path = pathObj.ToString();
         if (string.IsNullOrWhiteSpace(path))
         {
             return new CommandResponse
@@ -440,7 +504,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> DeleteFolder(CommandRequest request)
     {
-        var path = request.Params["path"].ToString();
+        if (!request.Params.TryGetValue("path", out var pathObj) || pathObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: path"
+            };
+        }
+
+        var path = pathObj.ToString();
         if (string.IsNullOrWhiteSpace(path))
         {
             return new CommandResponse
@@ -508,8 +582,28 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> MoveFile(CommandRequest request)
     {
-        var source = request.Params["source"].ToString();
-        var destination = request.Params["destination"].ToString();
+        if (!request.Params.TryGetValue("source", out var sourceObj) || sourceObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: source"
+            };
+        }
+
+        if (!request.Params.TryGetValue("destination", out var destObj) || destObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: destination"
+            };
+        }
+
+        var source = sourceObj.ToString();
+        var destination = destObj.ToString();
 
         if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
         {
@@ -601,8 +695,28 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> CopyFile(CommandRequest request)
     {
-        var source = request.Params["source"].ToString();
-        var destination = request.Params["destination"].ToString();
+        if (!request.Params.TryGetValue("source", out var sourceObj) || sourceObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: source"
+            };
+        }
+
+        if (!request.Params.TryGetValue("destination", out var destObj) || destObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: destination"
+            };
+        }
+
+        var source = sourceObj.ToString();
+        var destination = destObj.ToString();
 
         if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(destination))
         {
@@ -777,7 +891,17 @@ public class WindowsActionExecutor : IActionExecutor
 
     private async Task<CommandResponse> CaptureWindow(CommandRequest request)
     {
-        var applicationName = request.Params["application"].ToString();
+        if (!request.Params.TryGetValue("application", out var appNameObj) || appNameObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: application"
+            };
+        }
+
+        var applicationName = appNameObj.ToString();
         if (string.IsNullOrWhiteSpace(applicationName))
         {
             return new CommandResponse
@@ -884,9 +1008,21 @@ public class WindowsActionExecutor : IActionExecutor
 
         try
         {
-            // Use PowerShell to perform text-to-speech without adding new dependencies
-            var escapedText = text.Replace("'", "''");
-            var command = $"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak('{escapedText}')";
+            // Sanitize text to prevent command injection
+            // Remove any characters that could be used for injection
+            var sanitizedText = SanitizeForSpeech(text);
+            if (string.IsNullOrWhiteSpace(sanitizedText))
+            {
+                _logger.LogWarning("Text became empty after sanitization");
+                return;
+            }
+
+            // Use base64 encoding to safely pass text to PowerShell
+            var bytes = System.Text.Encoding.Unicode.GetBytes(sanitizedText);
+            var base64Text = Convert.ToBase64String(bytes);
+
+            // PowerShell script that decodes base64 and speaks
+            var command = $"$text = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('{base64Text}')); Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Speak($text)";
 
             var startInfo = new ProcessStartInfo
             {
@@ -910,6 +1046,265 @@ public class WindowsActionExecutor : IActionExecutor
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to synthesize speech for answer");
+        }
+    }
+
+    /// <summary>
+    /// Sanitize text for speech synthesis - removes potentially dangerous characters
+    /// </summary>
+    private static string SanitizeForSpeech(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        // Remove control characters and limit length
+        var sanitized = new System.Text.StringBuilder();
+        foreach (var c in text.Take(1000)) // Limit to 1000 chars
+        {
+            // Allow letters, digits, punctuation, and common whitespace
+            if (char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c))
+            {
+                sanitized.Append(c);
+            }
+        }
+        return sanitized.ToString().Trim();
+    }
+
+    private async Task<CommandResponse> ShowDesktop(CommandRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Showing desktop (Win+D)");
+
+            // Simulate Win+D keypress using PowerShell
+            var script = @"
+                $shell = New-Object -ComObject Shell.Application
+                $shell.MinimizeAll()
+            ";
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    action = "show_desktop",
+                    message = "Desktop shown (all windows minimized)"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to show desktop");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to show desktop: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> TakeScreenshot(CommandRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Taking full screen screenshot");
+
+            // Get screen bounds using User32 API
+            var screenWidth = Native.User32.GetSystemMetrics(0);  // SM_CXSCREEN
+            var screenHeight = Native.User32.GetSystemMetrics(1); // SM_CYSCREEN
+
+            if (screenWidth <= 0) screenWidth = 1920;
+            if (screenHeight <= 0) screenHeight = 1080;
+
+            using var bitmap = new System.Drawing.Bitmap(screenWidth, screenHeight);
+            using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+
+            graphics.CopyFromScreen(0, 0, 0, 0, bitmap.Size);
+
+            // Save to temp file
+            var screenshotPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png"
+            );
+
+            bitmap.Save(screenshotPath, System.Drawing.Imaging.ImageFormat.Png);
+
+            // Convert to base64
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+
+            _logger.LogInformation("Screenshot saved to {Path}", screenshotPath);
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    action = "screenshot",
+                    path = screenshotPath,
+                    width = screenWidth,
+                    height = screenHeight,
+                    image = base64,
+                    message = $"Screenshot saved to {screenshotPath}"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to take screenshot");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to take screenshot: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> ToggleMute(CommandRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Toggling system mute");
+
+            // Use nircmd or PowerShell to toggle mute
+            var script = @"
+                Add-Type -TypeDefinition @'
+                using System.Runtime.InteropServices;
+                public class Audio {
+                    [DllImport(""user32.dll"")]
+                    public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+                    public const byte VK_VOLUME_MUTE = 0xAD;
+                }
+'@
+                [Audio]::keybd_event([Audio]::VK_VOLUME_MUTE, 0, 0, 0)
+                [Audio]::keybd_event([Audio]::VK_VOLUME_MUTE, 0, 2, 0)
+            ";
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    action = "mute",
+                    message = "System mute toggled"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to toggle mute");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to toggle mute: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> SetVolume(CommandRequest request)
+    {
+        try
+        {
+            var levelObj = request.Params.GetValueOrDefault("level");
+            if (levelObj == null)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Volume level is required"
+                };
+            }
+
+            if (!int.TryParse(levelObj.ToString(), out int level) || level < 0 || level > 100)
+            {
+                return new CommandResponse
+                {
+                    Status = "error",
+                    Result = null,
+                    Error = "Volume level must be between 0 and 100"
+                };
+            }
+
+            _logger.LogInformation("Setting volume to {Level}%", level);
+
+            // Use PowerShell to set volume
+            var script = $@"
+                $obj = New-Object -ComObject WScript.Shell
+                # First mute to reset, then set volume
+                1..50 | ForEach-Object {{ $obj.SendKeys([char]174) }}
+                1..{level / 2} | ForEach-Object {{ $obj.SendKeys([char]175) }}
+            ";
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    action = "set_volume",
+                    level = level,
+                    message = $"Volume set to {level}%"
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set volume");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to set volume: {ex.Message}"
+            };
         }
     }
 }

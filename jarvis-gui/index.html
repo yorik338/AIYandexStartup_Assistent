@@ -3,178 +3,405 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ayvor Assistant</title>
+  <title>Ayvor</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div class="logo">
-      <div class="logo-icon">🤖</div>
-      <h1>AYVOR</h1>
-    </div>
-    <div class="header-info">
-      <div class="apps-counter" id="appsCounter" title="Нажмите для сканирования">
-        <span class="apps-icon">📦</span>
-        <span id="appsCount">-</span> приложений
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">◆</span>
+          <span class="logo-text">AYVOR</span>
+        </div>
       </div>
-      <div class="status-indicator" id="statusIndicator">
-        <span class="status-dot"></span>
-        <span id="statusText">Готов</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Main Content - Clean Input Area -->
-  <div class="main-area">
-    <div class="input-section">
-      <h2 class="welcome-text">Чем могу помочь?</h2>
-      <p class="hint-text">Введите команду или нажмите на микрофон</p>
+      <div class="nav-items">
+        <button class="nav-item active" data-page="home" title="Главная">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Главная</span>
+        </button>
 
-      <!-- Combined Input: Text + Mic -->
-      <div class="unified-input">
-        <input type="text" id="commandInput" class="command-input" placeholder="открой Chrome, запусти Telegram, покажи рабочий стол..." autocomplete="off" />
-        <button class="mic-btn" id="micButton" title="Голосовой ввод (Ctrl+Shift+Space)">
-          <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <button class="nav-item" data-page="apps" title="Приложения">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Приложения</span>
+          <span class="nav-badge" id="appsBadge">0</span>
+        </button>
+
+        <button class="nav-item" data-page="voice" title="Голос">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
             <line x1="12" y1="19" x2="12" y2="23"></line>
             <line x1="8" y1="23" x2="16" y2="23"></line>
           </svg>
+          <span>Голос</span>
         </button>
-        <button class="send-btn" id="sendBtn" title="Отправить (Enter)">
+
+        <button class="nav-item" data-page="history" title="История">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
+          <span>История</span>
         </button>
       </div>
 
-      <!-- Quick Commands -->
-      <div class="quick-commands">
-        <button class="quick-cmd" data-cmd="открой Chrome">🌐 Chrome</button>
-        <button class="quick-cmd" data-cmd="открой Telegram">💬 Telegram</button>
-        <button class="quick-cmd" data-cmd="покажи рабочий стол">🖥️ Рабочий стол</button>
-        <button class="quick-cmd" data-cmd="скриншот">📸 Скриншот</button>
-        <button class="quick-cmd" data-cmd="выключи звук">🔇 Mute</button>
+      <div class="nav-bottom">
+        <button class="nav-item" data-page="settings" title="Настройки">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Настройки</span>
+        </button>
       </div>
-    </div>
-  </div>
+    </nav>
 
-  <!-- Bottom Panel - Results, History, Log -->
-  <div class="bottom-panel" id="bottomPanel">
-    <div class="panel-resize-handle" id="panelResizeHandle"></div>
-    <div class="panel-tabs">
-      <button class="panel-tab active" data-tab="result">📋 Результат</button>
-      <button class="panel-tab" data-tab="history">📜 История</button>
-      <button class="panel-tab" data-tab="log">🔧 Лог</button>
-    </div>
-
-    <div class="panel-content">
-      <!-- Result Tab -->
-      <div class="tab-content active" id="resultTab">
-        <div class="result-grid">
-          <div class="result-item">
-            <div class="result-label">Распознано:</div>
-            <div class="result-value" id="transcriptBox">-</div>
-          </div>
-          <div class="result-item">
-            <div class="result-label">Команда:</div>
-            <div class="result-value code" id="commandBox">-</div>
-          </div>
-          <div class="result-item full-width">
-            <div class="result-label">Результат:</div>
-            <div class="result-value" id="responseBox">-</div>
-          </div>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Window Controls (for frameless window) -->
+      <div class="window-controls">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span id="statusText">Готов</span>
+        </div>
+        <div class="window-buttons">
+          <button class="win-btn minimize" id="minimizeBtn" title="Свернуть в трей">
+            <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg>
+          </button>
+          <button class="win-btn close" id="closeBtn" title="Закрыть">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
+          </button>
         </div>
       </div>
 
-      <!-- History Tab -->
-      <div class="tab-content" id="historyTab">
+      <!-- Page: Home -->
+      <section class="page active" id="page-home">
+        <div class="page-header">
+          <h1>Привет! Чем помочь?</h1>
+          <p class="subtitle">Введите команду или нажмите на микрофон для голосового ввода</p>
+        </div>
+
+        <!-- Wake Word Section -->
+        <div class="wake-word-section">
+          <button class="wake-word-btn active" id="wakeWordBtn" title="Голосовая активация 'Аврора' - всегда слушает">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            "Аврора" активна
+          </button>
+          <span class="wake-status" id="wakeWordStatus">Загрузка модели...</span>
+        </div>
+
+        <div class="command-section">
+          <div class="command-input-wrapper">
+            <input type="text" id="commandInput" class="command-input" placeholder="открой Chrome, запусти Telegram, покажи рабочий стол..." autocomplete="off" />
+            <button class="mic-btn" id="micButton" title="Голосовой ввод (Ctrl+Shift+Space)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+            <button class="send-btn" id="sendBtn" title="Отправить (Enter)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Audio Visualizer -->
+          <div class="visualizer-container" id="visualizerContainer">
+            <div class="visualizer-bars" id="visualizerBars">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+            <span class="visualizer-status" id="visualizerStatus">Ожидание...</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <h3>Быстрые действия</h3>
+          <div class="quick-grid">
+            <button class="quick-btn" data-cmd="открой Chrome">
+              <span class="quick-icon">🌐</span>
+              <span class="quick-label">Chrome</span>
+            </button>
+            <button class="quick-btn" data-cmd="открой Telegram">
+              <span class="quick-icon">💬</span>
+              <span class="quick-label">Telegram</span>
+            </button>
+            <button class="quick-btn" data-cmd="покажи рабочий стол">
+              <span class="quick-icon">🖥️</span>
+              <span class="quick-label">Рабочий стол</span>
+            </button>
+            <button class="quick-btn" data-cmd="скриншот">
+              <span class="quick-icon">📸</span>
+              <span class="quick-label">Скриншот</span>
+            </button>
+            <button class="quick-btn" data-cmd="выключи звук">
+              <span class="quick-icon">🔇</span>
+              <span class="quick-label">Mute</span>
+            </button>
+            <button class="quick-btn" data-cmd="громкость 50">
+              <span class="quick-icon">🔊</span>
+              <span class="quick-label">Громкость 50%</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card" id="resultCard">
+          <div class="result-header">
+            <span class="result-title">Последний результат</span>
+            <span class="result-time" id="resultTime">-</span>
+          </div>
+          <div class="result-body">
+            <div class="result-row">
+              <span class="result-label">Распознано:</span>
+              <span class="result-value" id="transcriptBox">-</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Команда:</span>
+              <code class="result-code" id="commandBox">-</code>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Результат:</span>
+              <span class="result-value" id="responseBox">-</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Apps -->
+      <section class="page" id="page-apps">
+        <div class="page-header">
+          <h1>Приложения</h1>
+          <p class="subtitle">Найденные приложения на вашем компьютере</p>
+        </div>
+
+        <div class="apps-toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="appsSearchInput" placeholder="Поиск приложений..." />
+          </div>
+          <button class="btn-primary" id="scanAppsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Сканировать
+          </button>
+        </div>
+
+        <div class="apps-grid" id="appsList">
+          <div class="apps-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <p>Нажмите "Сканировать" для поиска приложений</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: Voice -->
+      <section class="page" id="page-voice">
+        <div class="page-header">
+          <h1>Настройки голоса</h1>
+          <p class="subtitle">Настройте микрофон и параметры распознавания</p>
+        </div>
+
+        <div class="settings-cards">
+          <div class="settings-card">
+            <h3>Микрофон</h3>
+            <div class="setting-row">
+              <label>Устройство:</label>
+              <div class="select-wrapper">
+                <select id="microphoneDevice">
+                  <option value="default">По умолчанию</option>
+                </select>
+                <button class="icon-btn" id="refreshMics" title="Обновить список">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label>Порог тишины: <span id="silenceThresholdValue">200</span></label>
+              <input type="range" id="silenceThreshold" min="50" max="1000" value="200" class="slider" />
+              <small>Чем выше значение, тем громче нужно говорить</small>
+            </div>
+
+            <div class="setting-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="noiseSuppression" checked />
+                <span class="checkmark"></span>
+                Шумоподавление
+              </label>
+            </div>
+
+            <div class="setting-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="autoGainControl" checked />
+                <span class="checkmark"></span>
+                Автоматическая регулировка громкости
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <h3>Тест микрофона</h3>
+            <div class="mic-test-area">
+              <div class="mic-level-bar">
+                <div class="mic-level-fill" id="micLevelFill"></div>
+              </div>
+              <button class="btn-primary" id="testMicBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                </svg>
+                Начать тест
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Page: History -->
+      <section class="page" id="page-history">
+        <div class="page-header">
+          <h1>История команд</h1>
+          <p class="subtitle">Последние выполненные команды</p>
+        </div>
+
+        <div class="history-toolbar">
+          <button class="btn-secondary" id="clearHistoryBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Очистить
+          </button>
+        </div>
+
         <div class="history-list" id="historyList">
-          <div class="history-placeholder">История команд пуста</div>
-        </div>
-      </div>
-
-      <!-- Log Tab -->
-      <div class="tab-content" id="logTab">
-        <div class="log-header">
-          <span>Системный лог</span>
-          <div class="log-actions">
-            <button class="log-btn" id="copyErrorBtn" title="Копировать">📋</button>
-            <button class="log-btn" id="clearLogBtn" title="Очистить">🗑️</button>
+          <div class="history-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <p>История команд пуста</p>
           </div>
         </div>
-        <div class="log-content" id="errorLogContent">
-          <span class="log-placeholder">Лог пуст...</span>
+
+        <!-- Log Section -->
+        <div class="log-section">
+          <div class="log-header">
+            <h3>Системный лог</h3>
+            <div class="log-actions">
+              <button class="icon-btn" id="copyLogBtn" title="Копировать">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <button class="icon-btn" id="clearLogBtn" title="Очистить">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="log-content" id="logContent">
+            <span class="log-placeholder">Лог пуст...</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Audio Visualizer Bar -->
-    <div class="visualizer-bar" id="visualizerBar">
-      <div class="visualizer-label">🎤</div>
-      <div class="visualizer-bars" id="visualizerBars">
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-      </div>
-      <div class="visualizer-status" id="visualizerStatus">Ожидание...</div>
-    </div>
-  </div>
+      <!-- Page: Settings -->
+      <section class="page" id="page-settings">
+        <div class="page-header">
+          <h1>Настройки</h1>
+          <p class="subtitle">Конфигурация приложения</p>
+        </div>
 
-  <!-- Apps List Modal -->
-  <div class="modal-overlay" id="appsModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>📦 Приложения</h2>
-        <button class="close-btn" id="closeAppsModal">×</button>
-      </div>
-      <div class="modal-search">
-        <input type="text" id="appsSearchInput" placeholder="Поиск приложений..." />
-      </div>
-      <div class="apps-list" id="appsList">
-        <div class="apps-loading">Загрузка...</div>
-      </div>
-    </div>
-  </div>
+        <div class="settings-cards">
+          <div class="settings-card">
+            <h3>Подключение</h3>
+            <div class="setting-row">
+              <label>C# Core Endpoint:</label>
+              <input type="text" id="coreEndpoint" class="text-input" placeholder="http://localhost:5055" />
+            </div>
+            <div class="setting-row">
+              <label>OpenAI API Key:</label>
+              <input type="password" id="openaiKey" class="text-input" placeholder="sk-..." />
+            </div>
+          </div>
 
-  <!-- Settings Panel -->
-  <div class="settings-panel" id="settingsPanel">
-    <div class="settings-header">
-      <h2>Настройки</h2>
-      <button class="close-btn" id="closeSettings">×</button>
-    </div>
-    <div class="settings-content">
-      <div class="setting-group">
-        <label>C# Core Endpoint:</label>
-        <input type="text" id="coreEndpoint" placeholder="http://localhost:5055" />
-      </div>
-      <div class="setting-group">
-        <label>OpenAI API Key:</label>
-        <input type="password" id="openaiKey" placeholder="sk-..." />
-      </div>
-      <div class="setting-group">
-        <label>Язык:</label>
-        <select id="language">
-          <option value="ru-RU">Русский</option>
-          <option value="en-US">English</option>
-        </select>
-      </div>
-      <div class="setting-group">
-        <label>Горячая клавиша:</label>
-        <input type="text" id="hotkey" value="Ctrl+Shift+Space" readonly />
-      </div>
-      <button class="save-btn" id="saveSettings">Сохранить</button>
-    </div>
-  </div>
+          <div class="settings-card">
+            <h3>Общие</h3>
+            <div class="setting-row">
+              <label>Язык:</label>
+              <select id="language" class="select-input">
+                <option value="ru-RU">Русский</option>
+                <option value="en-US">English</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label>Горячая клавиша:</label>
+              <input type="text" id="hotkey" class="text-input" value="Ctrl+Shift+Space" readonly />
+            </div>
+          </div>
 
-  <!-- Floating Controls -->
-  <div class="floating-controls">
-    <button class="float-btn" id="scanAppsBtn" title="Сканировать приложения">🔍</button>
-    <button class="float-btn" id="settingsBtn" title="Настройки">⚙️</button>
-    <button class="float-btn" id="minimizeBtn" title="Свернуть в трей">➖</button>
+          <div class="settings-card">
+            <h3>О программе</h3>
+            <div class="about-info">
+              <p><strong>Ayvor Assistant</strong></p>
+              <p>Версия: 1.0.0</p>
+              <p>Голосовой помощник для Windows</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button class="btn-primary" id="saveSettingsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Сохранить настройки
+          </button>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="renderer.js"></script>

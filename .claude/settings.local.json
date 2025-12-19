@@ -30,7 +30,14 @@
       "Bash(cmd.exe /c \"taskkill /F /IM JarvisCore.exe\")",
       "Bash(powershell -Command:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(node download-model.js:*)",
+      "Bash(node --version:*)",
+      "Bash(where:*)",
+      "Bash(\"c:\\workspace\\AIYandexStartup_Assistent\\jarvis-gui\\node_modules\\electron\\dist\\electron.exe\" --version)",
+      "Bash(\"C:\\Users\\Professional\\AppData\\Roaming\\npm\\node_modules\\electron\\dist\\electron.exe\" --version)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

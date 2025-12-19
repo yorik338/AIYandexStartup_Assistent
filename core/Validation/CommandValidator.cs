@@ -23,7 +23,11 @@ public class CommandValidator : ICommandValidator
         { "scan_applications", new List<string>() },
         { "list_applications", new List<string>() },
         { "capture_window", new List<string> { "application" } },
-        { "answer_question", new List<string> { "answer" } }
+        { "answer_question", new List<string> { "answer" } },
+        { "show_desktop", new List<string>() },
+        { "screenshot", new List<string>() },
+        { "mute", new List<string>() },
+        { "set_volume", new List<string> { "level" } }
     };
 
     public ValidationResult Validate(CommandRequest request)

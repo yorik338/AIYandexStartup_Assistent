@@ -208,4 +208,18 @@ public static class User32
     public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref ANIMATIONINFO pvParam, uint fWinIni);
 
     #endregion
+
+    #region System Metrics
+
+    /// <summary>
+    /// Gets system metrics (screen size, etc.)
+    /// </summary>
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+
+    // System metric constants
+    public const int SM_CXSCREEN = 0;  // Primary screen width
+    public const int SM_CYSCREEN = 1;  // Primary screen height
+
+    #endregion
 }

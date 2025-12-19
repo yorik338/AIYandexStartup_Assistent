@@ -38,6 +38,11 @@ const defaultConfig = {
   openaiKey: envConfig.OPENAI_API_KEY || '', // Load from .env by default
   language: 'ru-RU',
   hotkey: 'CommandOrControl+Shift+Space',
+  // Microphone settings
+  microphoneDeviceId: 'default',
+  silenceThreshold: 200,
+  noiseSuppression: true,
+  autoGainControl: true,
 };
 
 // Load config from file
@@ -72,15 +77,17 @@ let tray = null;
 // Create the main window
 function createWindow() {
   const windowOptions = {
-    width: 1600,
-    height: 1000,
-    minWidth: 1000,
-    minHeight: 700,
-    frame: true,
-    backgroundColor: '#1a1a2e',
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    frame: false,
+    backgroundColor: '#0d0d0f',
+    titleBarStyle: 'hidden',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
     },
   };
 
@@ -249,4 +256,18 @@ ipcMain.handle('save-config', async (event, config) => {
     savedConfig = config;
   }
   return { success };
+});
+
+// Window control handlers for frameless window
+ipcMain.on('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.on('window-close', () => {
+  if (mainWindow) {
+    app.isQuitting = true;
+    app.quit();
+  }
 });

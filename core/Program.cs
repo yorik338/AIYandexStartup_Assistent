@@ -2,6 +2,16 @@ using JarvisCore.Models;
 using JarvisCore.Services;
 using JarvisCore.Validation;
 using Serilog;
+using System.Collections.Concurrent;
+using System.Text;
+
+// Fix Cyrillic encoding in console
+Console.OutputEncoding = Encoding.UTF8;
+Console.InputEncoding = Encoding.UTF8;
+
+// Simple rate limiter - 30 requests per second per IP
+var requestCounts = new ConcurrentDictionary<string, (int count, DateTime resetTime)>();
+const int MaxRequestsPerSecond = 30;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +49,42 @@ catch (Exception ex)
 {
     Log.Warning(ex, "Could not initialize application registry, starting with empty registry");
 }
+
+// Rate limiting middleware
+app.Use(async (context, next) =>
+{
+    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    var now = DateTime.UtcNow;
+
+    var (count, resetTime) = requestCounts.GetOrAdd(clientIp, _ => (0, now.AddSeconds(1)));
+
+    // Reset counter if time window passed
+    if (now >= resetTime)
+    {
+        requestCounts[clientIp] = (1, now.AddSeconds(1));
+        await next();
+        return;
+    }
+
+    // Check rate limit
+    if (count >= MaxRequestsPerSecond)
+    {
+        Log.Warning("Rate limit exceeded for IP: {ClientIp}", clientIp);
+        context.Response.StatusCode = 429;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new CommandResponse
+        {
+            Status = "error",
+            Result = null,
+            Error = "Too many requests. Please slow down."
+        });
+        return;
+    }
+
+    // Increment counter
+    requestCounts[clientIp] = (count + 1, resetTime);
+    await next();
+});
 
 // Middleware for exception handling
 app.Use(async (context, next) =>
@@ -79,7 +125,8 @@ app.MapGet("/", () =>
         {
             "open_app", "run_exe", "search_files", "adjust_setting", "system_status",
             "create_folder", "delete_folder", "move_file", "copy_file",
-            "scan_applications", "list_applications", "capture_window", "answer_question"
+            "scan_applications", "list_applications", "capture_window", "answer_question",
+            "show_desktop", "screenshot", "mute", "set_volume"
         }
     });
 });
