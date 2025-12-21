@@ -24,6 +24,7 @@ def _request_transcription(file: BinaryIO):
         return client.audio.transcriptions.create(
             model=_transcription_model(),
             file=file,
+            language="ru",  # Explicitly set Russian language for better accuracy
         )
     except PermissionDeniedError as exc:
         logger.error("OpenAI transcription request was rejected: %s", exc)
