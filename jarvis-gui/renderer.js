@@ -1,11 +1,16 @@
-// Ayvor Assistant - Renderer Process (New UI)
-// Uses secure preload API via window.ayvorAPI
+if (window.__ayvorRendererInitialized) {
+  console.warn('Renderer already initialized - skipping duplicate load');
+} else {
+  window.__ayvorRendererInitialized = true;
 
-// Get secure API from preload script
-const ayvorAPI = window.ayvorAPI;
-const ipcRenderer = ayvorAPI.ipc;
-const processAPI = ayvorAPI.process;
-const __dirname = ayvorAPI.path.dirname;
+  // Ayvor Assistant - Renderer Process (New UI)
+  // Uses secure preload API via window.ayvorAPI
+
+  // Get secure API from preload script
+  const ayvorAPI = window.ayvorAPI;
+  const ipcRenderer = ayvorAPI.ipc;
+  const processAPI = ayvorAPI.process;
+  const __dirname = ayvorAPI.path.dirname;
 
 // ============================================
 // STATE
@@ -1193,3 +1198,5 @@ ipcRenderer.on('app-closing', () => {
     pythonProcess = null;
   }
 });
+
+} // End singleton guard
