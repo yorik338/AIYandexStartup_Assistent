@@ -4,8 +4,8 @@
   "description": "Ayvor AI Assistant - Умный голосовой помощник для Windows",
   "main": "main.js",
   "scripts": {
-    "start": "set ELECTRON_RUN_AS_NODE= && electron .",
-    "dev": "set ELECTRON_RUN_AS_NODE= && set NODE_ENV=development && electron .",
+    "start": "electron .",
+    "dev": "set NODE_ENV=development && electron .",
     "build": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
