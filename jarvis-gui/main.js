@@ -87,6 +87,9 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      // Explicitly disable sandboxing so preload has access to Node APIs
+      // (required for child_process usage in preload.js)
+      sandbox: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   };
