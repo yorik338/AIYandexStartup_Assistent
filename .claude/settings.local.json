@@ -37,7 +37,10 @@
       "Bash(where:*)",
       "Bash(\"c:\\workspace\\AIYandexStartup_Assistent\\jarvis-gui\\node_modules\\electron\\dist\\electron.exe\" --version)",
       "Bash(\"C:\\Users\\Professional\\AppData\\Roaming\\npm\\node_modules\\electron\\dist\\electron.exe\" --version)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git show:*)",
+      "Bash(xargs ls:*)",
+      "Bash(.venv/Scripts/pip:*)"
     ],
     "deny": [],
     "ask": []

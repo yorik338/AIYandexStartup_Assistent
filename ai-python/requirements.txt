@@ -1,0 +1,18 @@
+# HTTP клиент для связи с C# Core
+requests>=2.31.0
+
+# OpenAI API (ChatGPT, Whisper)
+openai>=1.0.0
+
+# HTTP клиент с поддержкой proxy
+httpx>=0.25.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Audio recording
+sounddevice>=0.4.6
+numpy>=1.24.0
+
+# Wake word detection (Vosk)
+vosk>=0.3.45

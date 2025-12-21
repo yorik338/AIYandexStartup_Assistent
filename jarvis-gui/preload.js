@@ -62,7 +62,11 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
         throw new Error('Script not allowed');
       }
 
-      const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+      // Try to use venv Python first, fallback to system Python
+      const venvPython = path.join(__dirname, '..', 'ai-python', '.venv', 'Scripts', 'python.exe');
+      const fs = require('fs');
+      const pythonCmd = fs.existsSync(venvPython) ? venvPython :
+                        (process.platform === 'win32' ? 'python' : 'python3');
       let scriptPath;
 
       if (scriptName === 'wake_word.py') {
