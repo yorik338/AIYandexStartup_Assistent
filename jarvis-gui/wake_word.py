@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Wake Word Detection Service using Vosk
-Listens for "Аврора" wake word and outputs JSON events to stdout
+Listens for "Айвор" wake word and outputs JSON events to stdout
 """
 
 import sys
@@ -32,7 +32,7 @@ except ImportError:
 SetLogLevel(-1)
 
 # Wake words to detect
-WAKE_WORDS = ['аврора', 'аврор', 'авроры', 'aurora', 'эй аврора', 'привет аврора']
+WAKE_WORDS = ['айвор', 'айвора', 'эйвор', 'ivor', 'эй айвор', 'привет айвор']
 
 # Audio settings
 SAMPLE_RATE = 16000
@@ -112,7 +112,7 @@ def main():
         output_event("error", f"Failed to load model: {e}")
         sys.exit(1)
 
-    output_event("ready", "Wake word detection ready. Say 'Аврора'")
+    output_event("ready", "Wake word detection ready. Say 'Айвор'")
 
     # Start audio stream
     try:

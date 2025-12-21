@@ -858,11 +858,11 @@ function toggleWakeWord() {
 function handleWakeWordEvent(event) {
   switch (event.type) {
     case 'ready':
-      addLog('Wake word готов: скажите "Аврора"', 'success');
+      addLog('Wake word готов: скажите "Айвор"', 'success');
       break;
 
     case 'wake_word':
-      addLog(`Аврора услышала: "${event.text}"`, 'success');
+      addLog(`Айвор услышал: "${event.text}"`, 'success');
       playActivationSound();
 
       // Speak greeting when wake word detected
