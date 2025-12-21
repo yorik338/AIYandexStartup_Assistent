@@ -865,6 +865,9 @@ function handleWakeWordEvent(event) {
       addLog(`Аврора услышала: "${event.text}"`, 'success');
       playActivationSound();
 
+      // Speak greeting when wake word detected
+      speak('Да мой господин', 1.0, 0.9);
+
       // Stop wake word temporarily during command processing
       stopWakeWordDetection();
 
@@ -1034,6 +1037,8 @@ function handlePythonOutput(output) {
   if (output.includes('Recording audio')) {
     setStatus('Говорите...', true);
     visualizerStatus.textContent = 'Слушаю...';
+    // Speak greeting when ready to listen
+    speak('Да мой господин', 1.0, 0.9);
   } else if (output.includes('silence')) {
     setStatus('Обработка...', false);
     visualizerStatus.textContent = 'Распознаю...';
@@ -1056,6 +1061,34 @@ function resumeWakeWordAfterDelay(delayMs = 1500) {
       startWakeWordDetection();
     }
   }, delayMs);
+}
+
+// Text-to-Speech function
+function speak(text, rate = 1.0, pitch = 1.0, voice = null) {
+  if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    utterance.lang = 'ru-RU'; // Russian language
+
+    // Use a specific voice if provided, otherwise use Russian voice
+    if (voice) {
+      utterance.voice = voice;
+    } else {
+      const voices = window.speechSynthesis.getVoices();
+      const russianVoice = voices.find(v => v.lang.startsWith('ru'));
+      if (russianVoice) {
+        utterance.voice = russianVoice;
+      }
+    }
+
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.warn('Speech synthesis not supported in this browser');
+  }
 }
 
 function toggleListening() {
