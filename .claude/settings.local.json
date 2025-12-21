@@ -40,7 +40,8 @@
       "Bash(echo:*)",
       "Bash(git show:*)",
       "Bash(xargs ls:*)",
-      "Bash(.venv/Scripts/pip:*)"
+      "Bash(.venv/Scripts/pip:*)",
+      "Bash(.venv/Scripts/python -c \"import httpx; print(httpx.get(''https://api.openai.com'', proxies={''https://'': ''https://user154100:arqb1o@23.94.132.163:2631''}, timeout=5).status_code)\")"
     ],
     "deny": [],
     "ask": []
