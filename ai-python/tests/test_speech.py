@@ -15,7 +15,17 @@ import pytest
 
 # Provide a lightweight stub so the tests do not require the optional OpenAI dependency
 if "openai" not in sys.modules:
-    sys.modules["openai"] = types.SimpleNamespace(OpenAI=object)
+    class _DummyOpenAIError(Exception):
+        pass
+
+    class _DummyPermissionDeniedError(_DummyOpenAIError):
+        pass
+
+    sys.modules["openai"] = types.SimpleNamespace(
+        OpenAI=object,
+        OpenAIError=_DummyOpenAIError,
+        PermissionDeniedError=_DummyPermissionDeniedError,
+    )
 
 from ai_assistant import speech
 

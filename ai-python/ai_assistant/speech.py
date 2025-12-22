@@ -14,6 +14,27 @@ from openai import OpenAIError, PermissionDeniedError
 from .openai_client import build_openai_client
 
 logger = logging.getLogger(__name__)
+
+_ALLOWED_LANGUAGES = {"ru", "en"}
+
+
+def _normalize_language_code(language: str) -> str:
+    return language.split("-")[0].lower()
+
+
+def _ensure_allowed_language(language: str | None) -> None:
+    if not language:
+        raise RuntimeError(
+            "Transcription response did not include a detected language; only Russian and English are allowed."
+        )
+
+    normalized = _normalize_language_code(language)
+    if normalized not in _ALLOWED_LANGUAGES:
+        raise RuntimeError(
+            f"Unsupported transcription language detected: {language}. Only Russian and English are allowed."
+        )
+
+
 def _transcription_model() -> str:
     return os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1")
 
@@ -24,7 +45,12 @@ def _request_transcription(file: BinaryIO):
         return client.audio.transcriptions.create(
             model=_transcription_model(),
             file=file,
-            language="ru",  # Explicitly set Russian language for better accuracy
+            response_format="verbose_json",
+            temperature=0,
+            prompt=(
+                "The speaker will talk in Russian or English. If the audio is in another language, "
+                "treat it as unsupported and do not attempt to transcribe it."
+            ),
         )
     except PermissionDeniedError as exc:
         logger.error("OpenAI transcription request was rejected: %s", exc)
@@ -44,6 +70,7 @@ def transcribe_audio_file(audio_path: Path) -> str:
     logger.info("Transcribing audio file: %s", audio_path)
     with audio_path.open("rb") as audio_file:
         response = _request_transcription(audio_file)
+    _ensure_allowed_language(getattr(response, "language", None))
     logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
         raise RuntimeError("No transcription text returned")
@@ -89,6 +116,7 @@ def transcribe_stream(chunks: Iterable[bytes]) -> str:
     buffer.name = "stream.wav"
 
     response = _request_transcription(buffer)
+    _ensure_allowed_language(getattr(response, "language", None))
 
     logger.info("Voice transcript recognized: %s", response.text)
     if not response.text:
