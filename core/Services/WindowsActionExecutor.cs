@@ -14,13 +14,15 @@ public class WindowsActionExecutor : IActionExecutor
     private readonly PathValidator _pathValidator;
     private readonly ApplicationRegistry _appRegistry;
     private readonly WindowCaptureService _windowCaptureService;
+    private readonly MicrophoneRecorder _microphoneRecorder;
 
-    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger, ApplicationRegistry appRegistry, WindowCaptureService windowCaptureService)
+    public WindowsActionExecutor(ILogger<WindowsActionExecutor> logger, ApplicationRegistry appRegistry, WindowCaptureService windowCaptureService, MicrophoneRecorder microphoneRecorder)
     {
         _logger = logger;
         _pathValidator = new PathValidator();
         _appRegistry = appRegistry;
         _windowCaptureService = windowCaptureService;
+        _microphoneRecorder = microphoneRecorder;
     }
 
     public async Task<CommandResponse> ExecuteAsync(CommandRequest request)
@@ -48,6 +50,7 @@ public class WindowsActionExecutor : IActionExecutor
                 "screenshot" => await TakeScreenshot(request),
                 "mute" => await ToggleMute(request),
                 "set_volume" => await SetVolume(request),
+                "record_audio" => await RecordAudio(request),
                 _ => new CommandResponse
                 {
                     Status = "error",
@@ -64,6 +67,78 @@ public class WindowsActionExecutor : IActionExecutor
                 Status = "error",
                 Result = null,
                 Error = $"Execution failed: {ex.Message}"
+            };
+        }
+    }
+
+    private async Task<CommandResponse> RecordAudio(CommandRequest request)
+    {
+        if (!request.Params.TryGetValue("duration", out var durationObj) || durationObj == null)
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Missing required parameter: duration"
+            };
+        }
+
+        if (!double.TryParse(durationObj.ToString(), out double durationSeconds))
+        {
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = "Parameter 'duration' must be a number (seconds)"
+            };
+        }
+
+        string? fileName = request.Params.TryGetValue("fileName", out var fileNameObj)
+            ? fileNameObj?.ToString()
+            : null;
+
+        int sampleRate = 16_000;
+        if (request.Params.TryGetValue("sampleRate", out var sampleRateObj) && sampleRateObj != null && int.TryParse(sampleRateObj.ToString(), out var parsedRate))
+        {
+            sampleRate = parsedRate;
+        }
+
+        int channels = 1;
+        if (request.Params.TryGetValue("channels", out var channelsObj) && channelsObj != null && int.TryParse(channelsObj.ToString(), out var parsedChannels))
+        {
+            channels = parsedChannels;
+        }
+
+        try
+        {
+            var result = await _microphoneRecorder.RecordAsync(durationSeconds, fileName, sampleRate, channels);
+
+            return new CommandResponse
+            {
+                Status = "ok",
+                Result = new
+                {
+                    result.FileName,
+                    result.Path,
+                    result.DurationSeconds,
+                    result.SampleRate,
+                    result.Channels,
+                    result.SizeBytes,
+                    result.Format,
+                    result.Base64Data,
+                    capturedAt = result.CapturedAt.ToString("O")
+                },
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record microphone audio");
+            return new CommandResponse
+            {
+                Status = "error",
+                Result = null,
+                Error = $"Failed to record audio: {ex.Message}"
             };
         }
     }
