@@ -41,10 +41,10 @@ def test_transcribe_audio_file_uses_stub(monkeypatch: pytest.MonkeyPatch, sample
     """
 
     class DummyTranscriptions:
-        def create(self, *, model: str, file):
+        def create(self, *, model: str, file, **_: object):
             # The file object should be readable by the client.
             assert hasattr(file, "read")
-            return types.SimpleNamespace(text="stubbed transcription")
+            return types.SimpleNamespace(text="stubbed transcription", language="ru")
 
     class DummyAudio:
         def __init__(self) -> None:
@@ -54,7 +54,7 @@ def test_transcribe_audio_file_uses_stub(monkeypatch: pytest.MonkeyPatch, sample
         def __init__(self) -> None:
             self.audio = DummyAudio()
 
-    monkeypatch.setattr(speech, "_build_client", lambda: DummyClient())
+    monkeypatch.setattr(speech, "build_openai_client", lambda: DummyClient())
     monkeypatch.setattr(speech, "_transcription_model", lambda: "test-model")
 
     result = speech.transcribe_audio_file(sample_audio_path)
@@ -75,12 +75,12 @@ def test_transcribe_stream_pads_too_short_audio(monkeypatch: pytest.MonkeyPatch)
     observed_duration = None
 
     class DummyTranscriptions:
-        def create(self, *, model: str, file):
+        def create(self, *, model: str, file, **_: object):
             nonlocal observed_duration
             file.seek(0)
             with wave.open(file, "rb") as wav_file:
                 observed_duration = wav_file.getnframes() / wav_file.getframerate()
-            return types.SimpleNamespace(text="stream transcription")
+            return types.SimpleNamespace(text="stream transcription", language="ru")
 
     class DummyAudio:
         def __init__(self) -> None:
@@ -90,7 +90,7 @@ def test_transcribe_stream_pads_too_short_audio(monkeypatch: pytest.MonkeyPatch)
         def __init__(self) -> None:
             self.audio = DummyAudio()
 
-    monkeypatch.setattr(speech, "_build_client", lambda: DummyClient())
+    monkeypatch.setattr(speech, "build_openai_client", lambda: DummyClient())
     monkeypatch.setattr(speech, "_transcription_model", lambda: "test-model")
 
     result = speech.transcribe_stream([b"short"])

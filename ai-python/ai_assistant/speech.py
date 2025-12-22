@@ -15,23 +15,54 @@ from .openai_client import build_openai_client
 
 logger = logging.getLogger(__name__)
 
-_ALLOWED_LANGUAGES = {"ru", "en"}
+_BASE_ALLOWED_LANGUAGES = {"ru", "en"}
+_LANGUAGE_ALIASES = {
+    "russian": "ru",
+    "русский": "ru",
+    "рус": "ru",
+    "english": "en",
+    "английский": "en",
+}
 
 
 def _normalize_language_code(language: str) -> str:
-    return language.split("-")[0].lower()
+    cleaned = language.strip().lower().replace("_", "-")
+    base = cleaned.split("-")[0]
+    return _LANGUAGE_ALIASES.get(base, base)
+
+
+def _language_hint() -> str | None:
+    hint = os.getenv("OPENAI_TRANSCRIPTION_LANGUAGE_HINT")
+    if not hint:
+        return None
+
+    return _normalize_language_code(hint)
+
+
+def _allowed_languages() -> set[str]:
+    allowed = set(_BASE_ALLOWED_LANGUAGES)
+    hint = _language_hint()
+    if hint:
+        allowed.add(hint)
+
+    return allowed
 
 
 def _ensure_allowed_language(language: str | None) -> None:
+    allowed = _allowed_languages()
     if not language:
         raise RuntimeError(
-            "Transcription response did not include a detected language; only Russian and English are allowed."
+            "Transcription response did not include a detected language; "
+            f"only the following languages are allowed: {', '.join(sorted(allowed))}. "
+            "Set OPENAI_TRANSCRIPTION_LANGUAGE_HINT=ru to bias detection toward Russian."
         )
 
     normalized = _normalize_language_code(language)
-    if normalized not in _ALLOWED_LANGUAGES:
+    if normalized not in allowed:
         raise RuntimeError(
-            f"Unsupported transcription language detected: {language}. Only Russian and English are allowed."
+            f"Unsupported transcription language detected: {language}. "
+            f"Allowed languages: {', '.join(sorted(allowed))}. "
+            "If you are speaking Russian, set OPENAI_TRANSCRIPTION_LANGUAGE_HINT=ru to steer the model."
         )
 
 
@@ -41,17 +72,24 @@ def _transcription_model() -> str:
 
 def _request_transcription(file: BinaryIO):
     client = build_openai_client()
+
+    language_hint = _language_hint()
+    request_kwargs = {
+        "model": _transcription_model(),
+        "file": file,
+        "response_format": "verbose_json",
+        "temperature": 0,
+        "prompt": (
+            "The speaker will talk in Russian or English. If the audio is in another language, "
+            "treat it as unsupported and do not attempt to transcribe it."
+        ),
+    }
+
+    if language_hint:
+        request_kwargs["language"] = language_hint
+
     try:
-        return client.audio.transcriptions.create(
-            model=_transcription_model(),
-            file=file,
-            response_format="verbose_json",
-            temperature=0,
-            prompt=(
-                "The speaker will talk in Russian or English. If the audio is in another language, "
-                "treat it as unsupported and do not attempt to transcribe it."
-            ),
-        )
+        return client.audio.transcriptions.create(**request_kwargs)
     except PermissionDeniedError as exc:
         logger.error("OpenAI transcription request was rejected: %s", exc)
         raise RuntimeError(
