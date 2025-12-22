@@ -27,7 +27,8 @@ public class CommandValidator : ICommandValidator
         { "show_desktop", new List<string>() },
         { "screenshot", new List<string>() },
         { "mute", new List<string>() },
-        { "set_volume", new List<string> { "level" } }
+        { "set_volume", new List<string> { "level" } },
+        { "record_audio", new List<string> { "duration" } }
     };
 
     public ValidationResult Validate(CommandRequest request)
