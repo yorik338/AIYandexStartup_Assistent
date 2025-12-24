@@ -913,7 +913,7 @@ function updateWakeWordUI(active) {
           <line x1="12" y1="19" x2="12" y2="23"></line>
           <line x1="8" y1="23" x2="16" y2="23"></line>
         </svg>
-        Аврора слушает
+        Айвор слушает
       `;
     } else {
       wakeWordBtn.classList.remove('active');
@@ -925,13 +925,13 @@ function updateWakeWordUI(active) {
           <line x1="12" y1="19" x2="12" y2="23"></line>
           <line x1="8" y1="23" x2="16" y2="23"></line>
         </svg>
-        Включить "Аврора"
+        Включить "Айвор"
       `;
     }
   }
 
   if (wakeWordStatus) {
-    wakeWordStatus.textContent = active ? 'Слушаю "Аврора"...' : 'Wake word отключен';
+    wakeWordStatus.textContent = active ? 'Слушаю "Айвор"...' : 'Wake word отключен';
     wakeWordStatus.className = active ? 'wake-status active' : 'wake-status';
   }
 }
@@ -1182,7 +1182,7 @@ loadConfig().then(() => {
   renderHistory();
   renderLog();
 
-  // Auto-start wake word detection - "Аврора" always listening
+  // Auto-start wake word detection - "Айвор" always listening
   startWakeWordDetection();
 });
 

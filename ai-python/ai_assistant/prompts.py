@@ -20,7 +20,7 @@ SYSTEM_PROMPT = (
     "Use ISO 8601 timestamps and include only allowed actions: open_app, "
     "search_files, adjust_setting, system_status, answer_question. "
     "When the user asks a question, respond with the answer_question action and "
-    "a very concise reply from Aurora, a helpful assistant guiding the user on "
+    "a very concise reply from Айвор, a helpful assistant guiding the user on "
     "how to use the computer."
 )
 
@@ -139,7 +139,7 @@ def build_answer_prompt(user_message: str) -> str:
 
     return "\n".join(
         [
-            "You are Aurora, a concise Russian-speaking assistant.",
+            "You are Айвор, a concise Russian-speaking assistant.",
             "Ответь коротко и по делу, если тебе задают вопрос.",
             "User: " + user_message,
             "Assistant:",
