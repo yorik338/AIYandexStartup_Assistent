@@ -1,5 +1,5 @@
 // Wake Word Detection Service using Vosk
-// Offline speech recognition for "Айвор" wake word
+// Offline speech recognition for "Аврора" wake word
 // NOTE: This file is DEPRECATED - use wake_word.py (Whisper-based) instead
 
 const vosk = require('vosk');
@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Wake words to detect (variations)
-const WAKE_WORDS = ['айвор', 'айвора', 'эйвор', 'ivor'];
+const WAKE_WORDS = ['аврора', 'аврор', 'авроры', 'aurora'];
 
 class WakeWordService {
   constructor(options = {}) {

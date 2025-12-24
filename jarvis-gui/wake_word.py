@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Wake Word Detection Service using Whisper
-Listens for "Айвор" wake word and outputs JSON events to stdout
+Listens for "Аврора" wake word and outputs JSON events to stdout
 """
 
 import sys
@@ -31,7 +31,7 @@ except ImportError:
     sys.exit(1)
 
 # Wake words to detect
-WAKE_WORDS = ['айвор', 'айвора', 'эйвор', 'ivor', 'эй айвор', 'привет айвор']
+WAKE_WORDS = ['аврора', 'аврор', 'авроры', 'aurora', 'эй аврора', 'привет аврора']
 
 # Audio settings
 SAMPLE_RATE = 16000
@@ -107,7 +107,7 @@ def main():
         output_event("error", f"Failed to load Whisper model: {e}")
         sys.exit(1)
 
-    output_event("ready", "Wake word detection ready. Say 'Айвор'")
+    output_event("ready", "Wake word detection ready. Say 'Аврора'")
 
     # Calculate samples per chunk
     samples_per_chunk = SAMPLE_RATE * CHUNK_DURATION
