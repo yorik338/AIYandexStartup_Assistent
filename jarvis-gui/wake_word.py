@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wake Word Detection Service using Vosk
+Wake Word Detection Service using Whisper
 Listens for "Айвор" wake word and outputs JSON events to stdout
 """
 
@@ -9,6 +9,8 @@ import os
 import json
 import queue
 import signal
+import numpy as np
+from io import BytesIO
 
 # Set encoding for stdout
 if sys.platform == 'win32':
@@ -23,13 +25,10 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from vosk import Model, KaldiRecognizer, SetLogLevel
+    import whisper
 except ImportError:
-    print(json.dumps({"type": "error", "message": "vosk not installed. Run: pip install vosk"}))
+    print(json.dumps({"type": "error", "message": "whisper not installed. Run: pip install openai-whisper"}))
     sys.exit(1)
-
-# Suppress Vosk logging
-SetLogLevel(-1)
 
 # Wake words to detect
 WAKE_WORDS = ['айвор', 'айвора', 'эйвор', 'ivor', 'эй айвор', 'привет айвор']
@@ -37,14 +36,16 @@ WAKE_WORDS = ['айвор', 'айвора', 'эйвор', 'ivor', 'эй айво
 # Audio settings
 SAMPLE_RATE = 16000
 BLOCK_SIZE = 8000
+CHUNK_DURATION = 3  # seconds - process audio every 3 seconds
 
-# Paths
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(SCRIPT_DIR, 'models', 'vosk-model-small-ru-0.22')
+# Whisper model (можно поменять на 'small' для лучшего качества)
+WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'base')  # base, small, medium
 
 # Global state
 audio_queue = queue.Queue()
+audio_buffer = []
 running = True
+whisper_model = None
 
 
 def signal_handler(sig, frame):
@@ -91,28 +92,25 @@ def check_wake_word(text: str) -> tuple[bool, str, str]:
 
 
 def main():
-    global running
+    global running, whisper_model, audio_buffer
 
     # Setup signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Check if model exists
-    if not os.path.exists(MODEL_PATH):
-        output_event("error", f"Model not found at {MODEL_PATH}")
-        sys.exit(1)
-
-    # Initialize model
-    output_event("status", "Loading Vosk model...")
+    # Initialize Whisper model
+    output_event("status", f"Loading Whisper {WHISPER_MODEL} model (first time may take a while)...")
     try:
-        model = Model(MODEL_PATH)
-        recognizer = KaldiRecognizer(model, SAMPLE_RATE)
-        recognizer.SetWords(True)
+        whisper_model = whisper.load_model(WHISPER_MODEL)
+        output_event("status", f"Whisper {WHISPER_MODEL} model loaded successfully")
     except Exception as e:
-        output_event("error", f"Failed to load model: {e}")
+        output_event("error", f"Failed to load Whisper model: {e}")
         sys.exit(1)
 
     output_event("ready", "Wake word detection ready. Say 'Айвор'")
+
+    # Calculate samples per chunk
+    samples_per_chunk = SAMPLE_RATE * CHUNK_DURATION
 
     # Start audio stream
     try:
@@ -129,37 +127,51 @@ def main():
                 except queue.Empty:
                     continue
 
-                if recognizer.AcceptWaveform(data):
-                    result = json.loads(recognizer.Result())
-                    text = result.get('text', '')
+                # Add to buffer
+                audio_buffer.append(np.frombuffer(data, dtype=np.int16))
 
-                    if text:
-                        detected, wake_word, command = check_wake_word(text)
-                        if detected:
-                            output_event("wake_word", f"Detected: {text}", {
-                                "text": text,
-                                "wake_word": wake_word,
-                                "command": command
-                            })
-                else:
-                    partial = json.loads(recognizer.PartialResult())
-                    partial_text = partial.get('partial', '')
+                # Check if we have enough audio
+                total_samples = sum(len(chunk) for chunk in audio_buffer)
+                if total_samples >= samples_per_chunk:
+                    # Concatenate and convert to float32
+                    audio_array = np.concatenate(audio_buffer)
+                    audio_float = audio_array.astype(np.float32) / 32768.0
 
-                    if partial_text:
-                        # Check partial results for faster response
-                        detected, wake_word, command = check_wake_word(partial_text)
-                        if detected:
-                            output_event("wake_word", f"Detected: {partial_text}", {
-                                "text": partial_text,
-                                "wake_word": wake_word,
-                                "command": command,
-                                "partial": True
-                            })
-                            # Reset recognizer after detection
-                            recognizer.Reset()
+                    # Transcribe with Whisper
+                    try:
+                        result = whisper_model.transcribe(
+                            audio_float,
+                            language='ru',
+                            fp16=False,  # CPU mode
+                            beam_size=1,  # Faster inference
+                            best_of=1
+                        )
+                        text = result.get('text', '').strip()
+
+                        if text:
+                            output_event("transcription", text)
+
+                            # Check for wake word
+                            detected, wake_word, command = check_wake_word(text)
+                            if detected:
+                                output_event("wake_word", f"Detected: {text}", {
+                                    "text": text,
+                                    "wake_word": wake_word,
+                                    "command": command
+                                })
+                                # Clear buffer after detection
+                                audio_buffer = []
+                            else:
+                                # Keep last second for overlap
+                                samples_to_keep = SAMPLE_RATE
+                                audio_buffer = [audio_array[-samples_to_keep:]]
                         else:
-                            # Output partial for visual feedback
-                            output_event("partial", partial_text)
+                            # Clear buffer if no speech detected
+                            audio_buffer = []
+
+                    except Exception as e:
+                        output_event("error", f"Transcription error: {e}")
+                        audio_buffer = []
 
     except sd.PortAudioError as e:
         output_event("error", f"Audio device error: {e}")

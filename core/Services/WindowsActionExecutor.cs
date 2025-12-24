@@ -188,7 +188,9 @@ public class WindowsActionExecutor : IActionExecutor
             var startInfo = new ProcessStartInfo
             {
                 FileName = appInfo.Path,
-                UseShellExecute = true
+                UseShellExecute = true,
+                // Set working directory to the application's directory
+                WorkingDirectory = Path.GetDirectoryName(appInfo.Path) ?? Environment.CurrentDirectory
             };
 
             // Add launch arguments if specified
@@ -305,7 +307,9 @@ public class WindowsActionExecutor : IActionExecutor
             var startInfo = new ProcessStartInfo
             {
                 FileName = fullPath,
-                UseShellExecute = true
+                UseShellExecute = true,
+                // Set working directory to the executable's directory
+                WorkingDirectory = Path.GetDirectoryName(fullPath) ?? Environment.CurrentDirectory
             };
 
             var process = Process.Start(startInfo);
