@@ -1091,3 +1091,74 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* ==================================
+   TEXT INPUT EMPHASIS STYLES
+   ================================== */
+
+/* Large text input variant */
+.command-input.large {
+  font-size: 18px;
+  padding: 16px 20px;
+  font-weight: 500;
+}
+
+/* Focused wrapper with stronger visual emphasis */
+.command-input-wrapper.focused {
+  padding: 12px;
+  border-width: 2px;
+}
+
+/* Primary button style (for Send button) */
+.send-btn.primary {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.send-btn.primary:hover {
+  background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+  box-shadow: 0 6px 16px var(--accent-glow);
+  transform: scale(1.08);
+}
+
+.send-btn.primary svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* Secondary button style (for Mic button - less emphasis) */
+.mic-btn.secondary {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.mic-btn.secondary:hover {
+  opacity: 1;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.mic-btn.secondary.listening {
+  opacity: 1;
+  background: var(--accent-primary);
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.mic-btn.secondary svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Wake word controls on Voice page */
+.wake-word-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
+}

@@ -185,13 +185,21 @@ public class WindowsActionExecutor : IActionExecutor
             _logger.LogInformation("Found application: {Name} at {Path}", appInfo.Name, appInfo.Path);
 
             // Build process start info
+            var workingDir = Path.GetDirectoryName(appInfo.Path);
+            if (string.IsNullOrWhiteSpace(workingDir) || !Directory.Exists(workingDir))
+            {
+                workingDir = Environment.CurrentDirectory;
+                _logger.LogWarning("Invalid working directory for {Name}, using current directory", appInfo.Name);
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = appInfo.Path,
                 UseShellExecute = true,
-                // Set working directory to the application's directory
-                WorkingDirectory = Path.GetDirectoryName(appInfo.Path) ?? Environment.CurrentDirectory
+                WorkingDirectory = workingDir
             };
+
+            _logger.LogInformation("Launching {Name} with WorkingDirectory: {WorkingDir}", appInfo.Name, workingDir);
 
             // Add launch arguments if specified
             if (!string.IsNullOrWhiteSpace(appInfo.LaunchArguments))
@@ -304,13 +312,21 @@ public class WindowsActionExecutor : IActionExecutor
             }
 
             // Build process start info
+            var workingDir = Path.GetDirectoryName(fullPath);
+            if (string.IsNullOrWhiteSpace(workingDir) || !Directory.Exists(workingDir))
+            {
+                workingDir = Environment.CurrentDirectory;
+                _logger.LogWarning("Invalid working directory for executable, using current directory");
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = fullPath,
                 UseShellExecute = true,
-                // Set working directory to the executable's directory
-                WorkingDirectory = Path.GetDirectoryName(fullPath) ?? Environment.CurrentDirectory
+                WorkingDirectory = workingDir
             };
+
+            _logger.LogInformation("Launching executable with WorkingDirectory: {WorkingDir}", workingDir);
 
             var process = Process.Start(startInfo);
 
