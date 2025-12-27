@@ -41,7 +41,7 @@ def test_answer_text_is_nested_under_params() -> None:
     result = _extract({"action": "answer_question", "answer": "Welcome!"})
 
     assert result.is_valid
-    assert result.command is not None
+    assert result.commands and result.command is not None
     assert result.command.params["answer"] == "Welcome!"
 
 
@@ -56,5 +56,5 @@ def test_required_fields_are_copied_when_params_missing() -> None:
     )
 
     assert result.is_valid
-    assert result.command is not None
+    assert result.commands and result.command is not None
     assert result.command.params == {"setting": "volume", "value": "50"}

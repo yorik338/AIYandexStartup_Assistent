@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Dict
+from typing import Any, Dict, List
 from uuid import uuid4
 
 from .llm import PromptSender, parse_json_safely
@@ -22,37 +22,65 @@ class IntentExtractor:
     def extract(self, text: str) -> ValidationResult:
         logger.debug("Extracting intent for text: %s", text)
         raw_response = self._sender.send(text)
-        data: Dict[str, object] = parse_json_safely(raw_response)
+        data = parse_json_safely(raw_response)
         enriched = self._ensure_required_fields(data)
         return validate_command(enriched)
 
     @staticmethod
-    def _ensure_required_fields(data: Dict[str, object]) -> Dict[str, object]:
-        """Backfill required fields when the LLM omits them."""
+    def _ensure_required_fields(data: Any) -> Any:
+        """Backfill required fields when the LLM omits them.
 
-        action = data.get("action")
+        Supports a single command object, a list of command objects, or an object
+        containing a ``commands`` list. Non-dict items are preserved so the
+        validator can flag them explicitly.
+        """
 
-        raw_params = data.get("params")
-        params: Dict[str, object] = raw_params if isinstance(raw_params, dict) else {}
+        def _enrich_command(command: Dict[str, object]) -> Dict[str, object]:
+            action = command.get("action")
 
-        for field in ALLOWED_ACTIONS.get(action, []):
-            if field not in params and field in data:
-                params[field] = data[field]
+            raw_params = command.get("params")
+            params: Dict[str, object] = raw_params if isinstance(raw_params, dict) else {}
 
-        # Get uuid, but replace placeholders like "<uuid4>" with real UUID
-        uuid_value = data.get("uuid")
-        if not uuid_value or not isinstance(uuid_value, str) or uuid_value.startswith("<"):
-            uuid_value = str(uuid4())
+            for field in ALLOWED_ACTIONS.get(action, []):
+                if field not in params and field in command:
+                    params[field] = command[field]
 
-        # Get timestamp, but replace old/placeholder dates with current time
-        timestamp_value = data.get("timestamp")
-        if not timestamp_value or not isinstance(timestamp_value, str) or "2024-01-01" in timestamp_value:
-            timestamp_value = datetime.utcnow().isoformat() + "Z"
+            uuid_value = command.get("uuid")
+            if (
+                not uuid_value
+                or not isinstance(uuid_value, str)
+                or uuid_value.startswith("<")
+            ):
+                uuid_value = str(uuid4())
 
-        enriched: Dict[str, object] = {
-            "action": action,
-            "params": params,
-            "uuid": uuid_value,
-            "timestamp": timestamp_value,
-        }
-        return enriched
+            timestamp_value = command.get("timestamp")
+            if (
+                not timestamp_value
+                or not isinstance(timestamp_value, str)
+                or "2024-01-01" in timestamp_value
+            ):
+                timestamp_value = datetime.utcnow().isoformat() + "Z"
+
+            return {
+                "action": action,
+                "params": params,
+                "uuid": uuid_value,
+                "timestamp": timestamp_value,
+            }
+
+        def _enrich_collection(commands: List[Any]) -> List[Any]:
+            return [
+                _enrich_command(command) if isinstance(command, dict) else command
+                for command in commands
+            ]
+
+        if isinstance(data, list):
+            return _enrich_collection(data)
+
+        if isinstance(data, dict):
+            if "commands" in data and isinstance(data.get("commands"), list):
+                return {**data, "commands": _enrich_collection(data["commands"])}
+
+            return _enrich_command(data)
+
+        return data

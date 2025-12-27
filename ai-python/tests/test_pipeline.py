@@ -18,6 +18,14 @@ if "openai" not in sys.modules:
     sys.modules["openai"] = types.SimpleNamespace(
         OpenAI=object, OpenAIError=Exception, PermissionDeniedError=Exception
     )
+else:
+    module = sys.modules["openai"]
+    if not hasattr(module, "OpenAIError"):
+        module.OpenAIError = Exception  # type: ignore[attr-defined]
+    if not hasattr(module, "PermissionDeniedError"):
+        module.PermissionDeniedError = Exception  # type: ignore[attr-defined]
+    if not hasattr(module, "OpenAI"):
+        module.OpenAI = object  # type: ignore[attr-defined]
 
 from ai_assistant.pipeline import process_text
 from ai_assistant.schemas import Command
@@ -37,7 +45,7 @@ class RecordingBridge:
 class StaticSender:
     """Sender stub that returns static responses for send/answer calls."""
 
-    def __init__(self, payload: Dict[str, object], answer: str = "fallback"):
+    def __init__(self, payload: object, answer: str = "fallback"):
         self._payload = payload
         self.answer_text = answer
         self.last_sent: List[str] = []
@@ -70,3 +78,22 @@ def test_fallback_answer_is_sent_when_command_is_invalid() -> None:
     assert fallback["params"]["answer"] == "готов ответ"
     assert fallback["uuid"]
     assert fallback["timestamp"]
+
+
+def test_multiple_valid_commands_are_forwarded() -> None:
+    bridge = RecordingBridge()
+    sender = StaticSender(
+        [
+            {"action": "system_status", "params": {}},
+            {"action": "open_app", "params": {"application": "notepad"}},
+        ]
+    )
+
+    response = process_text("комбинированная задача", bridge, sender=sender)
+
+    assert isinstance(response, list)
+    assert len(response) == 2
+
+    actions = [command.action for command in bridge.sent_commands]
+    assert actions == ["system_status", "open_app"]
+    assert all(command.uuid for command in bridge.sent_commands)
