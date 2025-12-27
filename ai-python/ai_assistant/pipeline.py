@@ -17,8 +17,10 @@ from .speech import transcribe_audio_file, transcribe_stream
 logger = logging.getLogger(__name__)
 
 
-def process_text(text: str, bridge: HttpBridge, *, sender: Optional[PromptSender] = None) -> Optional[dict]:
-    """Process a text query and forward a validated command to the bridge.
+def process_text(
+    text: str, bridge: HttpBridge, *, sender: Optional[PromptSender] = None
+) -> Optional[object]:
+    """Process a text query and forward one or more validated commands.
 
     A custom :class:`PromptSender` can be injected for tests to avoid real LLM
     calls. When omitted the production ChatGPT backend is used.
@@ -28,25 +30,34 @@ def process_text(text: str, bridge: HttpBridge, *, sender: Optional[PromptSender
     extractor = IntentExtractor(sender)
     result = extractor.extract(text)
 
-    if not result.is_valid or result.command is None:
+    if not result.commands:
         issue_messages = [f"{issue.field}: {issue.message}" for issue in result.issues]
         logger.warning("Invalid command for C# bridge: %s", "; ".join(issue_messages))
         fallback = _build_fallback_answer(text, sender)
         return bridge.send_command(fallback)
 
-    return bridge.send_command(result.command)
+    if result.issues:
+        issue_messages = [f"{issue.field}: {issue.message}" for issue in result.issues]
+        logger.warning("Partial validation issues: %s", "; ".join(issue_messages))
+
+    responses = [bridge.send_command(command) for command in result.commands]
+
+    if not responses:
+        return None
+
+    return responses if len(responses) > 1 else responses[0]
 
 
 def process_audio_file(
     audio_path: Path, bridge: HttpBridge, *, sender: Optional[PromptSender] = None
-) -> Optional[dict]:
+) -> Optional[object]:
     transcript = transcribe_audio_file(audio_path)
     return process_text(transcript, bridge, sender=sender)
 
 
 def process_audio_stream(
     chunks: Iterable[bytes], bridge: HttpBridge, *, sender: Optional[PromptSender] = None
-) -> Optional[dict]:
+) -> Optional[object]:
     transcript = transcribe_stream(chunks)
     return process_text(transcript, bridge, sender=sender)
 

@@ -12,8 +12,10 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are an on-device AI assistant for Windows. "
-    "You receive spoken or typed requests and must emit a single JSON object. "
-    "Follow the C# bridge contract exactly: {action, params, uuid, timestamp}. "
+    "You receive spoken or typed requests and must emit JSON commands that the "
+    "system executes in order. When several steps are required, return multiple "
+    "commands. Follow the C# bridge contract exactly: {action, params, uuid, "
+    "timestamp}. "
     "When a user names an application, keep that name exactly—do not swap it for "
     "a different known app or a store launcher. "
     "because they map to verified paths; choose these aliases over raw filenames. "
@@ -115,7 +117,10 @@ def build_prompt(user_message: str, *, available_apps: Optional[Iterable[str]] =
 
     format_reminder = (
         "Return JSON only, no prose. Include 'action' and 'params' fields. "
-        "Example: {\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}}. "
+        "You may return an array of commands to run sequentially using either a "
+        "top-level list or a {\"commands\": [...]} wrapper. "
+        "Example (single): {\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}}. "
+        "Example (multiple): [{\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}},{\"action\":\"search_files\",\"params\":{\"query\":\"Документы\"}}]. "
         "Do NOT include uuid or timestamp - they will be added automatically."
     )
 
