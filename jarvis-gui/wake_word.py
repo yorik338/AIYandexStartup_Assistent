@@ -9,6 +9,7 @@ import os
 import json
 import queue
 import signal
+from typing import Tuple
 import numpy as np
 from io import BytesIO
 
@@ -74,7 +75,7 @@ def audio_callback(indata, frames, time, status):
     audio_queue.put(bytes(indata))
 
 
-def check_wake_word(text: str) -> tuple[bool, str, str]:
+def check_wake_word(text: str) -> Tuple[bool, str, str]:
     """
     Check if text contains wake word
     Returns: (detected, wake_word, command_after)
