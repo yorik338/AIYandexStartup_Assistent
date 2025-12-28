@@ -90,27 +90,19 @@
       <section class="page active" id="page-home">
         <div class="page-header">
           <h1>Привет! Чем помочь?</h1>
-          <p class="subtitle">Введите команду или нажмите на микрофон для голосового ввода</p>
-        </div>
-
-        <!-- Wake Word Section -->
-        <div class="wake-word-section">
-          <button class="wake-word-btn active" id="wakeWordBtn" title="Голосовая активация 'Айвор' - всегда слушает">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-            "Айвор" активен
-          </button>
-          <span class="wake-status" id="wakeWordStatus">Загрузка модели...</span>
+          <p class="subtitle">Введите команду текстом. Голосовой ввод доступен через кнопку микрофона или на вкладке "Голос"</p>
         </div>
 
         <div class="command-section">
-          <div class="command-input-wrapper">
-            <input type="text" id="commandInput" class="command-input" placeholder="открой Chrome, запусти Telegram, покажи рабочий стол..." autocomplete="off" />
-            <button class="mic-btn" id="micButton" title="Голосовой ввод (Ctrl+Shift+Space)">
+          <div class="command-input-wrapper focused">
+            <input type="text" id="commandInput" class="command-input large" placeholder="открой Chrome, запусти Telegram, покажи рабочий стол..." autocomplete="off" autofocus />
+            <button class="send-btn primary" id="sendBtn" title="Отправить (Enter)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+            <button class="mic-btn secondary" id="micButton" title="Голосовой ввод (Ctrl+Shift+Space)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -118,16 +110,10 @@
                 <line x1="8" y1="23" x2="16" y2="23"></line>
               </svg>
             </button>
-            <button class="send-btn" id="sendBtn" title="Отправить (Enter)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
           </div>
 
           <!-- Audio Visualizer -->
-          <div class="visualizer-container" id="visualizerContainer">
+          <div class="visualizer-container" id="visualizerContainer" style="display:none">
             <div class="visualizer-bars" id="visualizerBars">
               <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
               <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
@@ -235,7 +221,25 @@
           <p class="subtitle">Настройте микрофон и параметры распознавания</p>
         </div>
 
+        <!-- Wake Word Section -->
         <div class="settings-cards">
+          <div class="settings-card">
+            <h3>Wake Word - "Аврора"</h3>
+            <p style="margin-bottom: 15px; color: #888;">Голосовая активация - всегда слушает фразу "Аврора" для автоматического запуска команд</p>
+            <div class="wake-word-controls">
+              <button class="wake-word-btn active" id="wakeWordBtn" title="Голосовая активация 'Аврора' - всегда слушает">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                "Аврора" активна
+              </button>
+              <span class="wake-status" id="wakeWordStatus">Загрузка модели...</span>
+            </div>
+          </div>
+
           <div class="settings-card">
             <h3>Микрофон</h3>
             <div class="setting-row">
