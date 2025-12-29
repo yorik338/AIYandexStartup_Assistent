@@ -39,7 +39,18 @@ def _first_env(*names: str) -> Optional[str]:
     return None
 
 
+def _proxy_mode() -> str:
+    """Return the proxy mode requested via environment variables."""
+
+    mode = os.getenv("OPENAI_PROXY_MODE") or os.getenv("PROXY_MODE")
+    return (mode or "").strip().lower().replace("-", " ")
+
+
 def _resolve_proxy_url() -> Optional[str]:
+    if _proxy_mode() in {"no proxy", "no_proxy", "direct", "off", "disabled"}:
+        logger.info("Proxy mode disabled for OpenAI client")
+        return None
+
     for env_var in _PROXY_ENV_VARS:
         proxy_url = os.getenv(env_var)
         if proxy_url:
@@ -56,12 +67,7 @@ def _normalize_proxy_url(proxy_url: str) -> str:
     return proxy_url
 
 
-def _build_http_client(proxy_url: Optional[str]) -> Optional[httpx.Client]:
-    if not proxy_url:
-        return None
-
-    proxy_url = _normalize_proxy_url(proxy_url)
-
+def _build_http_client(proxy_url: Optional[str]) -> httpx.Client:
     # httpx: в новых версиях параметр называется "proxy", в старых был "proxies" :contentReference[oaicite:4]{index=4}
     signature = inspect.signature(httpx.Client.__init__).parameters
 
@@ -73,12 +79,14 @@ def _build_http_client(proxy_url: Optional[str]) -> Optional[httpx.Client]:
         "timeout": httpx.Timeout(60.0, connect=20.0),
     }
 
-    if "proxy" in signature:
-        client_kwargs["proxy"] = proxy_url
-    elif "proxies" in signature:
-        client_kwargs["proxies"] = proxy_url
-    else:
-        raise RuntimeError("Installed httpx.Client does not support proxy configuration")
+    if proxy_url:
+        normalized_proxy = _normalize_proxy_url(proxy_url)
+        if "proxy" in signature:
+            client_kwargs["proxy"] = normalized_proxy
+        elif "proxies" in signature:
+            client_kwargs["proxies"] = normalized_proxy
+        else:
+            raise RuntimeError("Installed httpx.Client does not support proxy configuration")
 
     return httpx.Client(**client_kwargs)
 
