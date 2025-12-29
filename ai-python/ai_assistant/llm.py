@@ -66,6 +66,16 @@ class PromptSender:
             logger.error("LLM answer call failed: %s", error.message, exc_info=exc)
             raise RuntimeError(error.message) from exc
 
+    def complete_custom(self, prompt: str) -> str:
+        """Send a pre-built prompt and normalize backend errors."""
+
+        try:
+            return self._backend.complete(prompt)
+        except Exception as exc:  # noqa: BLE001
+            error = self._normalize_error(exc)
+            logger.error("LLM custom prompt failed: %s", error.message, exc_info=exc)
+            raise RuntimeError(error.message) from exc
+
     @staticmethod
     def _normalize_error(exc: Exception) -> LLMError:
         is_retryable = isinstance(exc, ConnectionError)

@@ -121,7 +121,9 @@ def build_prompt(user_message: str, *, available_apps: Optional[Iterable[str]] =
         "top-level list or a {\"commands\": [...]} wrapper. "
         "Example (single): {\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}}. "
         "Example (multiple): [{\"action\":\"open_app\",\"params\":{\"application\":\"notepad\"}},{\"action\":\"search_files\",\"params\":{\"query\":\"Документы\"}}]. "
-        "Do NOT include uuid or timestamp - they will be added automatically."
+        "Do NOT include uuid or timestamp - they will be added automatically. "
+        "If the request contains two or more distinct actions, respond with a list "
+        "of at least two separate commands so each step executes individually."
     )
 
     application_hints = list(available_apps) if available_apps is not None else load_available_applications()
@@ -147,6 +149,41 @@ def build_answer_prompt(user_message: str) -> str:
             "You are Aurora, a concise Russian-speaking assistant.",
             "Ответь коротко и по делу, если тебе задают вопрос.",
             "User: " + user_message,
+            "Assistant:",
+        ]
+    )
+
+
+def build_multistep_prompt(user_message: str) -> str:
+    """Force the LLM to split a complex input into multiple commands."""
+
+    return "\n".join(
+        [
+            SYSTEM_PROMPT,
+            "User provided a compound instruction containing several actions.",
+            "Return JSON only and include at least two separate commands that can be executed one after another.",
+            "Keep application names exactly as requested.",
+            "User: " + user_message,
+            "Assistant:",
+        ]
+    )
+
+
+def build_error_resolution_prompt(
+    user_message: str, failed_command: dict, error_response: object
+) -> str:
+    """Ask the LLM to rebuild commands after the bridge returns an error."""
+
+    return "\n".join(
+        [
+            SYSTEM_PROMPT,
+            "The previous command failed on execution. Craft new executable commands that resolve the issue.",
+            "If multiple steps are needed, output a list of commands where each step is isolated.",
+            "Use the provided error details to adjust application names or required arguments.",
+            "Return JSON only.",
+            "Original user request: " + user_message,
+            "Failed command: " + json.dumps(failed_command, ensure_ascii=False),
+            "Bridge response: " + json.dumps(error_response, ensure_ascii=False),
             "Assistant:",
         ]
     )
