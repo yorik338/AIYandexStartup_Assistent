@@ -57,7 +57,7 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
 
     spawnPythonScript: (scriptName, options = {}) => {
       // Only allow specific Python scripts
-      const allowedScripts = ['main.py', 'wake_word.py'];
+      const allowedScripts = ['main.py', 'wake_word.py', 'text_processor.py'];
       if (!allowedScripts.includes(scriptName)) {
         throw new Error('Script not allowed');
       }
@@ -71,7 +71,7 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
 
       if (scriptName === 'wake_word.py') {
         scriptPath = path.join(__dirname, scriptName);
-      } else if (scriptName === 'main.py') {
+      } else {
         scriptPath = path.join(__dirname, '..', 'ai-python', scriptName);
       }
 
@@ -81,9 +81,9 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
         ...options.env,
       };
 
-      const cwd = scriptName === 'main.py'
-        ? path.join(__dirname, '..', 'ai-python')
-        : __dirname;
+      const cwd = scriptName === 'wake_word.py'
+        ? __dirname
+        : path.join(__dirname, '..', 'ai-python');
 
       const child = spawn(pythonCmd, ['-u', scriptPath], { cwd, env });
 

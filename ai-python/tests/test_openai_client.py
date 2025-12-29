@@ -18,9 +18,7 @@ def _load_client(monkeypatch: pytest.MonkeyPatch):
             Client=type(
                 "Client",
                 (),
-                {
-                    "__init__": lambda self, *, proxies=None, proxy=None, follow_redirects=True, trust_env=True: None,
-                },
+                {"__init__": lambda self, **kwargs: None},
             )
         ),
     )
