@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Optional, Protocol
@@ -34,10 +35,50 @@ class LLMError:
 def parse_json_safely(text: str) -> Dict[str, Any]:
     """Parse JSON while surfacing helpful errors."""
 
+    if text is None:
+        raise ValueError("LLM did not return any content to parse")
+
+    cleaned = text.strip()
+    if not cleaned:
+        raise ValueError("LLM returned an empty response")
+
+    def _attempt_parse(candidate: str) -> Dict[str, Any]:
+        return json.loads(candidate)
+
     try:
-        return json.loads(text)
+        return _attempt_parse(cleaned)
     except json.JSONDecodeError as exc:  # noqa: WPS440
-        raise ValueError(f"LLM did not return valid JSON: {exc}") from exc
+        candidates = _extract_json_candidates(cleaned)
+        for candidate in candidates:
+            try:
+                return _attempt_parse(candidate)
+            except json.JSONDecodeError:
+                continue
+
+        snippet = cleaned[:200].replace("\n", " ")
+        message = (
+            "LLM did not return valid JSON: "
+            f"{exc.msg} at line {exc.lineno} column {exc.colno}; "
+            f"response starts with: {snippet}"
+        )
+        raise ValueError(message) from exc
+
+
+def _extract_json_candidates(text: str) -> list[str]:
+    """Find plausible JSON snippets inside free-form text."""
+
+    candidates = []
+
+    fenced_match = re.search(r"```(?:json)?\s*(\{[\s\S]*?\}|\[[\s\S]*?])\s*```", text)
+    if fenced_match:
+        candidates.append(fenced_match.group(1).strip())
+
+    for pattern in (r"\{[\s\S]*\}", r"\[[\s\S]*\]"):
+        match = re.search(pattern, text)
+        if match:
+            candidates.append(match.group(0).strip())
+
+    return candidates
 
 
 class PromptSender:
