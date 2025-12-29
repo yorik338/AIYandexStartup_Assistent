@@ -691,6 +691,23 @@ async function processTextCommand(text) {
   addToHistory(text);
 
   try {
+    const gptResult = await runTextThroughGpt(text);
+
+    if (gptResult?.status === 'ok' && gptResult.result) {
+      commandBox.textContent = 'Команда отправлена через GPT-пайплайн';
+      responseBox.textContent = typeof gptResult.result === 'string'
+        ? gptResult.result
+        : JSON.stringify(gptResult.result, null, 2);
+      addLog('Запрос обработан через GPT', 'success');
+      return;
+    }
+
+    if (gptResult?.status === 'ok') {
+      addLog('GPT не вернул результата, пробуем локальный парсинг', 'warning');
+    } else if (gptResult?.error) {
+      addLog(`GPT обработка вернула ошибку: ${gptResult.error}`, 'error');
+    }
+
     const localCommand = parseCommandLocally(text);
 
     if (localCommand) {
@@ -961,6 +978,75 @@ function playActivationSound() {
 // PYTHON ASSISTANT
 // ============================================
 
+const PROXY_ENV_KEYS = [
+  'OPENAI_PROXY',
+  'HTTPS_PROXY',
+  'HTTP_PROXY',
+  'ALL_PROXY',
+  'https_proxy',
+  'http_proxy',
+  'all_proxy',
+];
+
+function buildPythonEnv(extraEnv = {}) {
+  const baseEnv = {
+    JARVIS_CORE_ENDPOINT: config.coreEndpoint,
+    OPENAI_API_KEY: config.openaiKey,
+    MIC_SILENCE_THRESHOLD: String(config.silenceThreshold || 200),
+  };
+
+  const proxyConfigured = PROXY_ENV_KEYS.some(
+    key => Boolean(extraEnv[key] || (typeof process !== 'undefined' && process.env?.[key]))
+  );
+  const merged = { ...baseEnv, ...extraEnv };
+
+  if (!proxyConfigured && !('OPENAI_PROXY_MODE' in merged)) {
+    merged.OPENAI_PROXY_MODE = 'no_proxy';
+  }
+
+  return merged;
+}
+
+function runTextThroughGpt(text) {
+  return new Promise((resolve, reject) => {
+    let stdout = '';
+    const python = processAPI.spawnPythonScript('text_processor.py', {
+      env: buildPythonEnv({ TEXT_QUERY: text }),
+    });
+
+    python.onStdout((data) => {
+      stdout += data;
+    });
+
+    python.onStderr((data) => {
+      addLog(data.trim(), 'error');
+    });
+
+    python.onError((error) => reject(error));
+
+    python.onClose((code) => {
+      if (code !== 0) {
+        reject(new Error(`Python text processor exited with code ${code}`));
+        return;
+      }
+
+      const lines = stdout.trim().split('\n').filter(Boolean);
+      const payload = lines.length ? lines[lines.length - 1] : '';
+
+      if (!payload) {
+        reject(new Error('Python text processor returned no data'));
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(payload));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
+
 function startPythonAssistant() {
   if (pythonProcess) return;
 
@@ -969,11 +1055,7 @@ function startPythonAssistant() {
 
   try {
     pythonProcess = processAPI.spawnPythonScript('main.py', {
-      env: {
-        JARVIS_CORE_ENDPOINT: config.coreEndpoint,
-        OPENAI_API_KEY: config.openaiKey,
-        MIC_SILENCE_THRESHOLD: String(config.silenceThreshold || 200),
-      },
+      env: buildPythonEnv(),
     });
 
     pythonProcess.onStdout((data) => {
