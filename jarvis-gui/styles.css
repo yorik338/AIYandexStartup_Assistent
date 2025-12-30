@@ -340,9 +340,69 @@ body {
 }
 
 .mic-btn.listening {
-  background: var(--accent-primary);
+  background: #ef4444; /* Red for recording */
   color: white;
   animation: pulse 1.5s infinite;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+/* Recording indicator overlay - SUPER OBVIOUS */
+.recording-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 50px;
+  display: none;
+  align-items: center;
+  gap: 15px;
+  z-index: 10001;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4);
+  backdrop-filter: blur(10px);
+  animation: slide-down 0.3s ease;
+}
+
+.recording-indicator.active {
+  display: flex;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.recording-dot {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  animation: recording-blink 1s infinite;
+}
+
+@keyframes recording-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.recording-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.recording-timer {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
 }
 
 .send-btn {
@@ -1074,6 +1134,144 @@ body {
   50% {
     box-shadow: 0 0 30px var(--accent-glow), 0 0 40px rgba(124, 58, 237, 0.2);
   }
+}
+
+/* Smooth rotation for scan icon */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced pulse-glow for scanning button */
+@keyframes scan-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--accent-glow),
+                0 4px 12px rgba(124, 58, 237, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px var(--accent-glow),
+                0 0 40px rgba(124, 58, 237, 0.4),
+                0 4px 16px rgba(124, 58, 237, 0.5);
+  }
+}
+
+/* Animated gradient background for scanning state */
+@keyframes scanning-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Scanning state for primary button */
+.btn-primary.scanning {
+  background: linear-gradient(
+    270deg,
+    var(--accent-primary),
+    var(--accent-secondary),
+    var(--accent-primary)
+  );
+  background-size: 200% 200%;
+  animation: scanning-gradient 2s ease infinite, scan-pulse 1.5s ease-in-out infinite;
+  cursor: wait;
+  position: relative;
+  overflow: visible;
+}
+
+.btn-primary.scanning svg {
+  animation: spin 1s linear infinite;
+}
+
+.btn-primary.scanning:hover {
+  transform: none; /* Disable hover lift during scan */
+}
+
+/* Scanning indicator overlay - SUPER OBVIOUS */
+.scanning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(5px);
+}
+
+.scanning-overlay.active {
+  display: flex;
+}
+
+.scanning-content {
+  text-align: center;
+  padding: 60px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 2px solid var(--accent-primary);
+  box-shadow: 0 0 40px var(--accent-glow);
+  min-width: 400px;
+}
+
+.scanning-spinner {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 30px;
+  border: 6px solid var(--bg-hover);
+  border-top: 6px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.scanning-text {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  margin-bottom: 15px;
+  letter-spacing: 2px;
+  animation: pulse 1.5s infinite;
+}
+
+.scanning-subtext {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.scanning-counter {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--success);
+  margin: 20px 0;
+}
+
+.scanning-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-hover);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.scanning-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  width: 0%;
+  animation: progress-pulse 2s ease-in-out infinite;
+  transition: width 0.3s ease;
+}
+
+@keyframes progress-pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
 
 .wake-status {

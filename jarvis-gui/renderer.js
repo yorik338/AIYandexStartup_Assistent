@@ -372,15 +372,37 @@ async function fetchAppsCount() {
   }
 }
 
+let scanningInProgress = false;
+
 async function scanApplications() {
+  if (scanningInProgress) {
+    addLog('⚠️ Сканирование уже выполняется, подождите...', 'warning');
+    return;
+  }
+
+  scanningInProgress = true;
+
+  // Show SUPER OBVIOUS overlay
+  const scanningOverlay = document.getElementById('scanningOverlay');
+  const scanningCounter = document.getElementById('scanningCounter');
+  const scanningProgressBar = document.getElementById('scanningProgressBar');
+
+  scanningOverlay.classList.add('active');
+  scanningCounter.textContent = '0';
+  scanningProgressBar.style.width = '0%';
+
+  // Apply scanning state to button
+  scanAppsBtn.classList.add('scanning');
   scanAppsBtn.disabled = true;
-  scanAppsBtn.innerHTML = `
-    <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="23 4 23 10 17 10"></polyline>
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-    </svg>
-    Сканирование...
-  `;
+
+  // Animate progress bar
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += 2;
+    if (progress <= 90) {
+      scanningProgressBar.style.width = `${progress}%`;
+    }
+  }, 100);
 
   try {
     const response = await fetchWithTimeout(`${config.coreEndpoint}/action/execute`, {
@@ -393,25 +415,36 @@ async function scanApplications() {
         timestamp: new Date().toISOString(),
       }),
     }, 30000); // 30 sec timeout for scan
+
     const data = await response.json();
+
     if (data.status === 'ok') {
-      addLog(`Найдено ${data.result?.applicationsFound || 0} приложений`, 'success');
+      const appsFound = data.result?.applicationsFound || 0;
+      scanningCounter.textContent = appsFound;
+      scanningProgressBar.style.width = '100%';
+
+      // Show completion state briefly
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      addLog(`✅ Найдено ${appsFound} приложений`, 'success');
       await fetchAppsCount();
       renderApps(allApps);
     } else {
-      addLog(`Ошибка сканирования: ${data.error}`, 'error');
+      addLog(`❌ Ошибка сканирования: ${data.error}`, 'error');
     }
   } catch (err) {
-    addLog(`Ошибка: ${err.message}`, 'error');
+    addLog(`❌ Ошибка: ${err.message}`, 'error');
   } finally {
+    clearInterval(progressInterval);
+
+    // Hide overlay
+    scanningOverlay.classList.remove('active');
+
+    // Remove scanning state
+    scanAppsBtn.classList.remove('scanning');
     scanAppsBtn.disabled = false;
-    scanAppsBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="23 4 23 10 17 10"></polyline>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-      </svg>
-      Сканировать
-    `;
+
+    scanningInProgress = false;
   }
 }
 
@@ -991,7 +1024,7 @@ const PROXY_ENV_KEYS = [
 function buildPythonEnv(extraEnv = {}) {
   const baseEnv = {
     JARVIS_CORE_ENDPOINT: config.coreEndpoint,
-    OPENAI_API_KEY: config.openaiKey,
+    // OPENAI_API_KEY: config.openaiKey,  // Let Python read from .env file
     MIC_SILENCE_THRESHOLD: String(config.silenceThreshold || 200),
   };
 
@@ -1073,6 +1106,19 @@ function startPythonAssistant() {
       stopAudioVisualizer();
       pythonProcess = null;
       isListening = false;
+
+      // Hide SUPER OBVIOUS recording indicator
+      const recordingIndicator = document.getElementById('recordingIndicator');
+      if (recordingIndicator) {
+        recordingIndicator.classList.remove('active');
+      }
+
+      // Stop recording timer
+      if (recordingTimerInterval) {
+        clearInterval(recordingTimerInterval);
+        recordingTimerInterval = null;
+      }
+      recordingStartTime = null;
     });
 
     pythonProcess.onClose((code) => {
@@ -1083,6 +1129,20 @@ function startPythonAssistant() {
       pythonProcess = null;
       setStatus('Готов', false);
       isListening = false;
+
+      // Hide SUPER OBVIOUS recording indicator
+      const recordingIndicator = document.getElementById('recordingIndicator');
+      if (recordingIndicator) {
+        recordingIndicator.classList.remove('active');
+      }
+
+      // Stop recording timer
+      if (recordingTimerInterval) {
+        clearInterval(recordingTimerInterval);
+        recordingTimerInterval = null;
+      }
+      recordingStartTime = null;
+
       // Resume wake word detection after voice input ends
       resumeWakeWordAfterDelay();
     });
@@ -1173,18 +1233,64 @@ function speak(text, rate = 1.0, pitch = 1.0, voice = null) {
   }
 }
 
+let recordingStartTime = null;
+let recordingTimerInterval = null;
+
+function updateRecordingTimer() {
+  if (!recordingStartTime) return;
+
+  const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+
+  const timerElement = document.getElementById('recordingTimer');
+  if (timerElement) {
+    timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+}
+
 function toggleListening() {
+  const recordingIndicator = document.getElementById('recordingIndicator');
+
   if (isListening) {
     setStatus('Готов', false);
     isListening = false;
     stopAudioVisualizer();
+
+    // Hide SUPER OBVIOUS recording indicator
+    if (recordingIndicator) {
+      recordingIndicator.classList.remove('active');
+    }
+
+    // Stop recording timer
+    if (recordingTimerInterval) {
+      clearInterval(recordingTimerInterval);
+      recordingTimerInterval = null;
+    }
+    recordingStartTime = null;
+
     if (pythonProcess) {
       pythonProcess.kill();
       pythonProcess = null;
     }
   } else {
-    setStatus('Запуск...', false);
+    setStatus('Слушаю...', true);
     isListening = true;
+
+    // Show SUPER OBVIOUS recording indicator
+    if (recordingIndicator) {
+      recordingIndicator.classList.add('active');
+    }
+
+    // Start recording timer
+    recordingStartTime = Date.now();
+    const timerElement = document.getElementById('recordingTimer');
+    if (timerElement) {
+      timerElement.textContent = '0:00';
+    }
+
+    recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+
     startPythonAssistant();
   }
 }

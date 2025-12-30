@@ -1,6 +1,6 @@
 {
   "name": "ayvor-assistant",
-  "version": "1.0.0",
+  "version": "1.2.2",
   "description": "Ayvor AI Assistant - Умный голосовой помощник для Windows",
   "main": "main.js",
   "scripts": {
@@ -21,9 +21,73 @@
   "author": "Ayvor Team",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.2.1"
+    "electron": "^33.2.1",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "unzipper": "^0.12.3"
+  },
+  "build": {
+    "appId": "com.ayvor.assistant",
+    "productName": "AYVOR Assistant",
+    "compression": "normal",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": false,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AYVOR Assistant",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "license": "LICENSE.txt",
+      "warningsAsErrors": false,
+      "displayLanguageSelector": false
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "styles.css",
+      "index.html",
+      "assets/**/*",
+      "download-model.js",
+      "download-electron.js",
+      "wake-word-service.js",
+      "test-main.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../core/bin/Release/net8.0/win-x64/publish/",
+        "to": "core",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../ai-python",
+        "to": "ai-python",
+        "filter": [
+          "**/*",
+          "!__pycache__",
+          "!*.pyc",
+          "!.venv.backup/**",
+          "!.venv/Lib/site-packages/torch/test/**",
+          "!.venv/Lib/site-packages/torch/include/**",
+          "!.venv/Lib/site-packages/sympy/**",
+          "!.venv/Lib/site-packages/vosk/**"
+        ]
+      }
+    ]
   }
 }

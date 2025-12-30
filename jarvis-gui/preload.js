@@ -62,17 +62,31 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
         throw new Error('Script not allowed');
       }
 
-      // Try to use venv Python first, fallback to system Python
-      const venvPython = path.join(__dirname, '..', 'ai-python', '.venv', 'Scripts', 'python.exe');
       const fs = require('fs');
+
+      // Determine base path: in production use resourcesPath, in dev use __dirname
+      const isPackaged = process.env.NODE_ENV !== 'development' && !__dirname.includes('jarvis-gui');
+      const basePath = isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+
+      // Try to use venv Python first, fallback to system Python
+      const venvPython = path.join(basePath, 'ai-python', '.venv', 'Scripts', 'python.exe');
       const pythonCmd = fs.existsSync(venvPython) ? venvPython :
                         (process.platform === 'win32' ? 'python' : 'python3');
+
+      // Log Python path for debugging
+      console.log(`[Preload] spawnPythonScript: ${scriptName}`);
+      console.log(`[Preload] isPackaged: ${isPackaged}`);
+      console.log(`[Preload] basePath: ${basePath}`);
+      console.log(`[Preload] venvPython: ${venvPython}`);
+      console.log(`[Preload] venvPython exists: ${fs.existsSync(venvPython)}`);
+      console.log(`[Preload] pythonCmd: ${pythonCmd}`);
+
       let scriptPath;
 
       if (scriptName === 'wake_word.py') {
-        scriptPath = path.join(__dirname, scriptName);
+        scriptPath = isPackaged ? path.join(basePath, 'ai-python', scriptName) : path.join(__dirname, scriptName);
       } else {
-        scriptPath = path.join(__dirname, '..', 'ai-python', scriptName);
+        scriptPath = path.join(basePath, 'ai-python', scriptName);
       }
 
       const env = {
@@ -81,9 +95,11 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
         ...options.env,
       };
 
-      const cwd = scriptName === 'wake_word.py'
-        ? __dirname
-        : path.join(__dirname, '..', 'ai-python');
+      const cwd = path.join(basePath, 'ai-python');
+
+      console.log(`[Preload] scriptPath: ${scriptPath}`);
+      console.log(`[Preload] cwd: ${cwd}`);
+      console.log(`[Preload] Spawning: ${pythonCmd} -u ${scriptPath}`);
 
       const child = spawn(pythonCmd, ['-u', scriptPath], { cwd, env });
 

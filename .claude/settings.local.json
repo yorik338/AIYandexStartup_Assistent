@@ -95,7 +95,20 @@
       "Bash(git restore:*)",
       "Bash(git push:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(cmd.exe /c \"copy \"\"c:\\\\workspace\\\\AIYandexStartup_Assistent\\\\jarvis-gui\\\\dist\\\\AYVOR Assistant Setup 1.1.0.exe\"\" \"\"c:\\\\workspace\\\\AYVOR-Installer-v1.1.0.exe\"\"\")",
+      "Bash(test:*)",
+      "Bash(\"c:\\\\workspace\\\\AIYandexStartup_Assistent\\\\ai-python\\\\.venv\\\\Scripts\\\\python.exe\" wake_word.py)",
+      "Bash(/c/workspace/AIYandexStartup_Assistent/ai-python/.venv/Scripts/python.exe:*)",
+      "Bash(/c/workspace/AIYandexStartup_Assistent/jarvis-gui/dist/win-unpacked/resources/ai-python/.venv/Scripts/python.exe:*)",
+      "Bash(TEXT_QUERY=\"test\" /c/workspace/AIYandexStartup_Assistent/jarvis-gui/dist/win-unpacked/resources/ai-python/.venv/Scripts/python.exe text_processor.py)",
+      "Bash(./python.exe:*)",
+      "Bash(TEXT_QUERY=\"\" /c/workspace/AIYandexStartup_Assistent/jarvis-gui/dist/win-unpacked/resources/ai-python/.venv/Scripts/python.exe text_processor.py)",
+      "Bash(cmd.exe /c \"copy \"\"c:\\\\workspace\\\\AIYandexStartup_Assistent\\\\jarvis-gui\\\\dist\\\\AYVOR Assistant Setup 1.1.7.exe\"\" \"\"c:\\\\workspace\\\\AYVOR-Installer-v1.1.7.exe\"\"\")",
+      "Bash(c:\\\\workspace\\\\AIYandexStartup_Assistent\\\\ai-python\\\\.venv\\\\Scripts\\\\pip.exe list)",
+      "Bash(cmd.exe /c \"copy \"\"c:\\\\workspace\\\\AIYandexStartup_Assistent\\\\jarvis-gui\\\\dist\\\\AYVOR Assistant Setup 1.2.2.exe\"\" \"\"c:\\\\workspace\\\\AYVOR-Installer-v1.2.2.exe\"\"\")"
     ],
     "deny": [],
     "ask": []

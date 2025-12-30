@@ -14,5 +14,6 @@ python-dotenv>=1.0.0
 sounddevice>=0.4.6
 numpy>=1.24.0
 
-# Wake word detection (Vosk)
-vosk>=0.3.45
+# Wake word detection (Whisper)
+openai-whisper>=20231117
+torch>=2.1.0

@@ -2,6 +2,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 // Config file path - will be set after app is ready
 let configPath = null;
@@ -73,6 +74,7 @@ let savedConfig = null;
 
 let mainWindow = null;
 let tray = null;
+let coreProcess = null;
 
 // Create the main window
 function createWindow() {
@@ -104,10 +106,8 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
-  // Open DevTools in development
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
-  }
+  // Open DevTools in development (always enabled for debugging)
+  // mainWindow.webContents.openDevTools();
 
   // Handle window close - quit the app completely
   mainWindow.on('close', () => {
@@ -188,8 +188,59 @@ function registerHotkeys() {
     }
   });
 
+  // F12 to toggle DevTools
+  globalShortcut.register('F12', () => {
+    if (mainWindow.webContents.isDevToolsOpened()) {
+      mainWindow.webContents.closeDevTools();
+    } else {
+      mainWindow.webContents.openDevTools();
+    }
+  });
+
   if (!ret) {
     console.log('Hotkey registration failed');
+  }
+}
+
+// Start C# Core backend
+function startCoreBackend() {
+  // Determine if running in development or production
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const basePath = isDev ? path.join(__dirname, '..') : process.resourcesPath;
+
+  const coreExePath = path.join(basePath, 'core', 'JarvisCore.exe');
+
+  console.log(`Starting C# Core from: ${coreExePath}`);
+
+  if (!fs.existsSync(coreExePath)) {
+    console.error(`C# Core not found at: ${coreExePath}`);
+    return;
+  }
+
+  coreProcess = spawn(coreExePath, [], {
+    cwd: path.join(basePath, 'core'),
+    windowsHide: true,
+    stdio: 'ignore'
+  });
+
+  coreProcess.on('error', (err) => {
+    console.error('Failed to start C# Core:', err);
+  });
+
+  coreProcess.on('exit', (code, signal) => {
+    console.log(`C# Core exited with code ${code}, signal ${signal}`);
+    coreProcess = null;
+  });
+
+  console.log(`C# Core started with PID: ${coreProcess.pid}`);
+}
+
+// Stop C# Core backend
+function stopCoreBackend() {
+  if (coreProcess) {
+    console.log('Stopping C# Core...');
+    coreProcess.kill();
+    coreProcess = null;
   }
 }
 
@@ -198,6 +249,9 @@ app.whenReady().then(() => {
   // Initialize config path after app is ready
   configPath = path.join(app.getPath('userData'), 'ayvor-config.json');
   savedConfig = loadConfigFromFile();
+
+  // Start C# Core backend
+  startCoreBackend();
 
   createWindow();
   createTray();
@@ -220,6 +274,7 @@ app.on('window-all-closed', () => {
 // Unregister all shortcuts when app quits
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  stopCoreBackend();
 });
 
 // IPC handlers
