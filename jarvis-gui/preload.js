@@ -82,13 +82,7 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
       console.log(`[Preload] basePath: ${basePath}`);
       console.log(`[Preload] pythonCmd: ${pythonPath}`);
 
-      let scriptPath;
-
-      if (scriptName === 'wake_word.py') {
-        scriptPath = isPackaged ? path.join(basePath, 'ai-python', scriptName) : path.join(__dirname, scriptName);
-      } else {
-        scriptPath = path.join(basePath, 'ai-python', scriptName);
-      }
+      const scriptPath = path.join(basePath, 'ai-python', scriptName);
 
       const env = {
         ...process.env,
