@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const { spawn, exec } = require('child_process');
 const path = require('path');
+const pythonEnv = require('./utils/python-env');
 
 // Secure API exposed to renderer process
 contextBridge.exposeInMainWorld('ayvorAPI', {
@@ -68,18 +69,18 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
       const isPackaged = process.env.NODE_ENV !== 'development' && !__dirname.includes('jarvis-gui');
       const basePath = isPackaged ? process.resourcesPath : path.join(__dirname, '..');
 
-      // Try to use venv Python first, fallback to system Python
-      const venvPython = path.join(basePath, 'ai-python', '.venv', 'Scripts', 'python.exe');
-      const pythonCmd = fs.existsSync(venvPython) ? venvPython :
-                        (process.platform === 'win32' ? 'python' : 'python3');
+      // Detect a working Python and ensure dependencies are installed
+      const { pythonPath, workingDirectory } = pythonEnv.ensurePythonEnvironment({
+        basePath,
+        autoInstall: true,
+        logger: (msg) => console.log(`[Preload] ${msg}`),
+      });
 
       // Log Python path for debugging
       console.log(`[Preload] spawnPythonScript: ${scriptName}`);
       console.log(`[Preload] isPackaged: ${isPackaged}`);
       console.log(`[Preload] basePath: ${basePath}`);
-      console.log(`[Preload] venvPython: ${venvPython}`);
-      console.log(`[Preload] venvPython exists: ${fs.existsSync(venvPython)}`);
-      console.log(`[Preload] pythonCmd: ${pythonCmd}`);
+      console.log(`[Preload] pythonCmd: ${pythonPath}`);
 
       let scriptPath;
 
@@ -95,13 +96,13 @@ contextBridge.exposeInMainWorld('ayvorAPI', {
         ...options.env,
       };
 
-      const cwd = path.join(basePath, 'ai-python');
+      const cwd = workingDirectory;
 
       console.log(`[Preload] scriptPath: ${scriptPath}`);
       console.log(`[Preload] cwd: ${cwd}`);
-      console.log(`[Preload] Spawning: ${pythonCmd} -u ${scriptPath}`);
+      console.log(`[Preload] Spawning: ${pythonPath} -u ${scriptPath}`);
 
-      const child = spawn(pythonCmd, ['-u', scriptPath], { cwd, env });
+      const child = spawn(pythonPath, ['-u', scriptPath], { cwd, env });
 
       // Return a safe wrapper
       return {

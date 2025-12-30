@@ -4,9 +4,11 @@
   "description": "Ayvor AI Assistant - Умный голосовой помощник для Windows",
   "main": "main.js",
   "scripts": {
+    "prepare-python": "node utils/python-env.js",
     "start": "electron .",
     "dev": "set NODE_ENV=development && electron .",
-    "build": "electron-builder",
+    "postinstall": "npm run prepare-python",
+    "build": "npm run prepare-python && electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -63,6 +65,7 @@
       "assets/**/*",
       "download-model.js",
       "download-electron.js",
+      "utils/python-env.js",
       "wake-word-service.js",
       "test-main.js"
     ],
