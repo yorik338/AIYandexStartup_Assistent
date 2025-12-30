@@ -86,11 +86,11 @@ AIYandexStartup_Assistent/
 │   ├── main.js          # Main process
 │   ├── renderer.js      # UI logic
 │   ├── index.html       # Interface
-│   └── wake_word.py     # Wake word detection
 │
 ├── ai-python/           # AI обработка
 │   ├── ai_assistant/    # Core модули
 │   ├── pipeline.py      # Orchestration
+│   ├── wake_word.py     # Wake word detection
 │   └── nlu.py           # Intent extraction
 │
 ├── core/                # C# Backend
